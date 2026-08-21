@@ -1,63 +1,67 @@
-import React, { PropsWithChildren, useEffect, useRef } from 'react';
-import { Animated, Easing, StyleProp, ViewStyle } from 'react-native';
-
-import { useReducedMotion } from '../interaction';
+import React, { useCallback, useRef } from 'react';
+import { Animated, Easing, View, ViewStyle } from 'react-native';
+import { useScroll, useScrollListener } from '@/scroll/ScrollProvider';
+import { readViewportTop } from '@/scroll/measure';
+import { motion } from '@/theme/tokens';
+import { useReducedMotion } from '@/theme/useReducedMotion';
 
 /**
- * The entrance every section uses: content fades up into place rather than
- * being there already.
- *
- * This is the motion language of the reference site the design is chasing —
- * nothing moves until you arrive at it, then the block assembles top-down in a
- * short stagger. Because this site is paged rather than continuously scrolled,
- * "arriving" means the page becoming the active one, not crossing a threshold.
- *
- * Each child that should animate separately gets its own `delay`; ~90ms apart
- * reads as one considered movement rather than a queue of separate ones.
+ * The web build used an IntersectionObserver with
+ * `rootMargin: 0px 0px -10% 0px`. React Native has no such API, so the same
+ * trigger is derived from the element's live position: it counts as visible
+ * once its top clears the bottom tenth of the viewport. Rise 24px / fade over
+ * 820ms, staggered 80ms by `index`, once.
  */
-
-export const REVEAL_MS = 620;
-export const REVEAL_STAGGER = 90;
-/** Far enough to read as movement, short enough not to feel like a slide-in. */
-const RISE = 26;
-
-export type RevealProps = PropsWithChildren<{
-  /** Usually "this section is the page you are looking at". */
-  visible: boolean;
-  delay?: number;
-  style?: StyleProp<ViewStyle>;
-}>;
-
-export function Reveal({ visible, delay = 0, style, children }: RevealProps) {
+export function Reveal({
+  index = 0,
+  style,
+  children,
+}: {
+  index?: number;
+  style?: ViewStyle | ViewStyle[];
+  children: React.ReactNode;
+}) {
   const reduced = useReducedMotion();
-  const progress = useRef(new Animated.Value(0)).current;
-  // Latched on purpose: an entrance plays once. Animating back out would hide
-  // a page again every time it stops being the active one, which both fights
-  // the reader on the way back up and turns any hiccup in tracking the active
-  // page into permanently blank content.
-  const shown = useRef(false);
+  const { viewportHeight } = useScroll();
+  const progress = useRef(new Animated.Value(reduced ? 1 : 0)).current;
+  const node = useRef<View | null>(null);
+  const done = useRef(reduced);
 
-  useEffect(() => {
-    if (!visible || shown.current) return;
-    shown.current = true;
+  useScrollListener(
+    useCallback(() => {
+      if (done.current) return;
 
-    if (reduced) {
-      progress.setValue(1);
-      return;
-    }
-    const animation = Animated.timing(progress, {
-      toValue: 1,
-      duration: REVEAL_MS,
-      delay,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [visible, delay, reduced, progress]);
+      const top = readViewportTop(node.current);
+      if (top == null) return;
+
+      const vh = viewportHeight.current || 0;
+      if (vh === 0) return;
+
+      /* The -10% bottom rootMargin. */
+      if (top > vh * 0.9) return;
+
+      done.current = true;
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: motion.revealDuration,
+        delay: index * motion.revealStagger,
+        easing: Easing.bezier(0.22, 1, 0.36, 1),
+        useNativeDriver: true,
+      }).start();
+    }, [index, progress, viewportHeight]),
+  );
+
+  if (reduced) {
+    return (
+      <View ref={node} style={style}>
+        {children}
+      </View>
+    );
+  }
 
   return (
     <Animated.View
+      ref={node as any}
       style={[
         style,
         {
@@ -66,7 +70,7 @@ export function Reveal({ visible, delay = 0, style, children }: RevealProps) {
             {
               translateY: progress.interpolate({
                 inputRange: [0, 1],
-                outputRange: [RISE, 0],
+                outputRange: [motion.revealDistance, 0],
               }),
             },
           ],
