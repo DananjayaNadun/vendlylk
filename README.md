@@ -1,228 +1,283 @@
-# Vendly Marketing Web
+# Vendly OrderFlow
 
-A React Native + Expo implementation of the Vendly marketing site: a single
-scrolling page (hero → about → categories → testimonials → footer) plus a
-sign-in screen, in both light and dark themes.
+The Vendly OrderFlow marketing page, built as an **Expo / React Native** app and
+exported to a static web bundle for Vercel. Design source: `Vendly OrderFlow.dc.html`
+from the Claude Design handoff, plus its `Site Nav` and `Site Footer` components.
 
-## Running it
+The components are genuine React Native (`View` / `Text` / `StyleSheet` /
+`Pressable` / `Animated`), so the same code can target iOS and Android — see
+[Native status](#native-status).
+
+## Commands
 
 ```bash
 npm run web
 ```
 
-`npm run ios` and `npm run android` run the same screens natively.
+| Script | What it does |
+|---|---|
+| `npm run web` | Dev server in the browser |
+| `npm run build:web` | Static export to `dist/` |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run ios` / `npm run android` | Native dev builds |
 
-## How it is built
+## Deploying to Vercel
 
-Every screen is authored on a fixed **1440-wide** canvas, and each one is a whole
-page of the design rather than a band of a longer document. `ScaledPage`
-(`src/components/ScaledPage.tsx`) gives each page exactly one screenful and
-scales it to *fit* — `min(vw / 1440, vh / pageHeight)` — so a whole page is
-visible at once and scrolling moves between pages rather than through one.
-Paging is on, so a scroll settles on a page instead of between two.
+`vercel.json` is set up — point Vercel at the repo and it will run
+`npx expo export --platform web --output-dir dist` and serve `dist/`. No
+dashboard configuration needed. It also adds immutable cache headers for
+`/_expo/static` and `/assets`, and rewrites unknown paths to `/` because the
+export is a single-page bundle.
 
-Fitting matters more than it sounds: scaling to viewport *width* blows the 1440
-canvas up by a third on a 1920 display and pushes the lower half of every page —
-the hero's video included — off the bottom edge.
+## Structure
 
-The canvas is never re-flowed, so every component still positions itself in raw
-design pixels and the numbers in the source can be read straight off the design.
-The fit is refined on both `onLayout` and a `Dimensions` `change` listener, so it
-re-fits on a live browser resize or device rotation and not only on first paint.
+```
+app/
+  _layout.tsx           Font loading, root layout
+  index.tsx             Page shell: ScrollView + the 16 sections + fixed nav
+src/
+  theme/tokens.ts       Every value from the handoff's token table
+  theme/responsive.ts   fluid() — the clamp() replacement — and auto-fit maths
+  theme/ViewportProvider.tsx  Measures the app root; the layout authority
+  theme/useReducedMotion.ts
+  scroll/ScrollProvider.tsx   Scroll offset, section registry, scroll-to-section
+  components/           Layout primitives, Type, Button, UI, Reveal, Enter, icons
+  sections/             One file per page section
+  data.ts               Copy and table data
+assets/                 Brand marks, icons, product shots, hero video
+legacy-static/          The earlier HTML/CSS build, kept as the fidelity reference
+_import/                Original handoff bundle — reference only, not deployed
+```
 
-### Sections
+## How the CSS design was translated
 
-| Section | Height | Source |
-| --- | --- | --- |
-| Hero — "Build Your Empire Today!" + looping video | 1024 | `src/sections/Hero.tsx` |
-| About — "Risk of fake orders" | 1024 | `src/sections/About.tsx` |
-| Categories — six-column rail | 1024 | `src/sections/Categories.tsx` |
-| Testimonials — "What People Say About Us !" | 1024 | `src/sections/Testimonials.tsx` |
-| Grow CTA + footer | 1440 | `src/sections/GrowFooter.tsx` |
-| Sign in (separate route) | 1024 | `src/screens/SignIn.tsx` |
+React Native has no cascade, no CSS grid, no `clamp()`, no `position: sticky`,
+no pseudo-elements and no `:hover`. Each of those needed a real replacement:
 
-Shared: `src/components/TopBar.tsx` (nav, theme toggle, CTA), `src/theme.ts`
-(palettes, fonts, type scale), `src/ThemeContext.tsx`, `src/Navigation.tsx`.
+| Design feature | React Native implementation |
+|---|---|
+| `clamp(min, Nvw, max)` type and spacing | `fluid(width, min, vw, max)` computed from the measured viewport |
+| `grid-template-columns: repeat(auto-fit, minmax(N, 1fr))` | `<AutoGrid minItemWidth gap spans>` — fits tracks, then **collapses empty ones** like `auto-fit`, which is what gives the categories panel its 1 + 2 split |
+| `grid-column: span 2` | `spans={[1, 2]}` on `AutoGrid` |
+| `position: sticky` + 380vh scene | A 3.8×viewport section with an absolutely-positioned stage whose `translateY` tracks scroll |
+| IntersectionObserver reveals | `<Reveal>` measures once, then compares against the live scroll offset |
+| `::before` / CSS counters | Real `View`/`Text` elements; numbers come from the data |
+| `:hover` + transition | `Pressable` `onHoverIn`/`onHoverOut` driving `Animated` (inert on touch) |
+| `backdrop-filter` nav glass | An `Animated` opacity cross-fade over an ink panel |
+| linear gradients | `expo-linear-gradient` |
+| `radial-gradient` (hero vignette, CTA glow) | Approximated with the equivalent directional ramp — RN has no radial gradient |
+| SVG icons | `react-native-svg`. WhatsApp/YouTube paths copied verbatim; the X mark is the current bare glyph, replacing the circular twitter-era icon in the handoff |
+| Hero background video | Platform-split: a real `<video>` (`muted`+`playsInline`+`autoplay`, `object-fit: cover`, CSS-keyframe Ken Burns) on web; `expo-video` on native |
+| Element position for scroll maths | Read live from the node every scroll, never remembered from `onLayout` — see below |
+| URL fragments (`#pricing`) | Sections register their offset; nav and footer call `scrollToSection` |
+| `prefers-reduced-motion` | `useReducedMotion()` — media query on web, `AccessibilityInfo` on native |
 
-### The hero video
+The pinned scene's maths is a literal port. Every constant was diffed against
+the prototype's `_tick()`, and the piecewise-linear `Animated` interpolation was
+checked numerically against the original easing: **endpoints exact, opacity
+within 0.0013, scale within 0.0016, translate within 0.55px** across a 430px
+sweep.
 
-The hero illustration in the design is a still frame of a 10s animated sequence,
-supplied separately (`assets/site/hero.mp4`, 1280 x 720 — the CDN's 9.2MB
-web-encoded copy rather than the 128MB original). It plays there instead, at the
-still's exact placement, muted and looping.
+## Verified
 
-The still is kept underneath as the poster: it covers the video's first paint and
-stands in wherever the video cannot play. Playback is skipped entirely when the
-OS asks for reduced motion — a 10s loop that starts on its own is exactly what
-that setting is for — and the still is shown instead.
+Measured in a real browser against the design spec, at 1440px and 390px:
 
-### The footer page
+- **Hero video** — playing, muted, looping, `object-fit: cover`, sized exactly to
+  the hero (its visible overscale is the 1.04 Ken Burns, clipped by the section),
+  with the 34s zoom running
+- **The pinned transformation scene** — the stage pins at exactly `span × p` at
+  every sample (0 / 630 / 1260 / 1890 / 2520 over a 2520px span), the rail
+  tracks 0→100%, the OrderFlow window fades in across p 0.30–0.68 (0.89 at
+  p = 0.5, matching the design's easing to two decimals), the chaos cards
+  converge and blur (`blur(2.38px)` at p = 0.2 — exactly `blur(t*3)` under the
+  same curve), and the last module chip lands at p = 1
+- Type scale — h1 78px/0.98/−0.042em, h2 58px/1.02/−0.038em, and their fluid
+  minimums (38px / 30px) at 390px
+- Container 1320px, gutter 40px, section padding 148px
+- Grid resolution — categories **428 / 874**, keep-selling **428 × 3**, matching
+  the CSS build exactly
+- Composition swap at 940px in both directions: nav menu vs. sheet, hero order
+  card dropped, pinned scene vs. stacked
+- Records tabs and the category picker, driven by real input
+- Inventory meters at 18 / 72 / 3 / 88% in the design's gold, accent and danger
+- Footer Support column is Help / Contact Support — no "Status" entry
+- X icon is the single-path 24×24 glyph; the old circular version is gone
+- All 10 font faces load and no others; 0 broken images
+- No horizontal overflow at either width
 
-Built from the design's own CSS for this frame, which ships as two variants,
-"Desktop - 7" (dark) and "Desktop - 9" (light). Where they agree the geometry is
-shared; where they differ only in colour, the palette switches.
+## Two bugs worth knowing about
 
-They also disagree on the footer link positions, and the light variant carries a
-literal "SL Flag l Sin" text placeholder with no logo and no social icons. Rather
-than ship a footer that loses its logo and socials when the theme flips, the dark
-variant's layout is used for both and only its colours change.
+**`onLayout` is not a position.** react-native-web implements `onLayout` with a
+`ResizeObserver`, which fires when an element's own size changes and *never*
+when the element moves because content above it grew — a font swapping in, an
+image sizing, a reveal expanding. Anything that remembered a `layout.y` offset
+therefore drifted out of alignment, which is what made the pinned scene animate
+against the wrong scroll origin. Section offsets and the scene's progress are
+now read live from the node (`src/scroll/measure.ts` / `.web.ts`), exactly as
+the design source read `getBoundingClientRect().top`.
 
-The two decorative shapes behind the headline are **rings, not discs**: Figma
-draws them as 790px ellipses with an arc ratio of 60%, so the hole sits at 60% of
-the radius. They are stroked circles — the stroke is the 158px band — with the
-gradient pinned in user space so it spans the full height. Each theme places them
-differently: `(-410, 141)` and `(1045, 141)` on dark, `(-395, 123)` and
-`(1045, 118)` on light.
+**`Image.resolveAssetSource` does not exist on react-native-web.** It threw and
+took the whole hero down with it. Bundled asset URLs come from `expo-asset` now.
 
-The crowd render is drawn at its own **1920 x 957** pixel size at `(-240, 625)`
-and never scaled — the earlier build used a 93KB JPEG re-encode of it, which is
-what made it look soft. It is now the original 1.75MB PNG at 1:1.
+## A follow-up round of fixes
 
-### Testimonials
+A screen recording surfaced three problems the checks above didn't catch:
 
-Rebuilt rather than traced. The quotes are the design's own; no names, faces,
-roles or star ratings are attached to them, because the source carries none and
-inventing them would be manufacturing endorsements from people who do not exist.
-The card, the quote mark and the emphasis carry the section instead, and real
-attribution can drop into the space under each quote when there is some.
+1. **Scroll stutter on the transformation section, and the headline text
+   showing through the nav.** Both traced to one cause. Reintroducing
+   `readViewportTop`-based measurement (see above) fixed correctness, but
+   notifying all ~25 scroll listeners — several doing a synchronous
+   `getBoundingClientRect()` — on every single raw scroll event is layout
+   thrashing. Raw scroll events fire far more often than once per animation
+   frame, so this hit two things: visible stutter, and the nav's backdrop
+   opacity lagging behind the actual scroll position, letting the "Before" /
+   "After" headline show through a not-yet-opaque nav. Fixed by coalescing
+   listener notification to one pass per `requestAnimationFrame` in
+   `ScrollProvider`, and — independently — giving the headline block enough
+   top clearance to sit fully below the nav's 72px regardless of timing
+   (`src/sections/Transformation.tsx`, `HEADS_TOP_CLEARANCE`).
 
-One card is live at a time — full contrast and an accent rule while its
-neighbours recede — and the arrows, the dots and the cards themselves all drive
-that one piece of state.
+   Verified with a burst of 200 raw scroll events dispatched synchronously: 56
+   style mutations landed, not the ~5,000 that 25 listeners × 200 events would
+   produce unthrottled — order-of-magnitude confirmation the coalescing works.
+   The headline now measures 103px (kicker) / 134px (heading) from the top at
+   the start of the section and 160px at the "After" state, both clear of the
+   72px nav with margin.
 
-### Theming
+2. **The outcomes list ("Less admin...") had one description out of line.**
+   The description `Text` had `maxWidth: 380` and no flex-basis, so its box
+   hugged its own content width — the title next to it (`flex: 1`) absorbed
+   whatever space was left, which differed per row depending on how much text
+   the description itself contained. Rows didn't share a column; they only
+   looked aligned when the description texts happened to be similar lengths.
+   Fixed with `flexBasis: 380, flexGrow: 0, flexShrink: 1` — a real fixed-width
+   column, not a content-hugging one with a cap.
 
-The design ships light and dark variants of every frame, and the nav carries a
-sun/moon toggle that drives them. Both are implemented: grounds, text, the CTA
-pill (which inverts), and the About gradient plate — pink-to-green on dark,
-red-to-orange on light — all flip together. "Today!" picks up the accent blue on
-dark exactly as the design shows.
+   Verified: all seven description strings now share the same `left` value.
 
-The About frame hangs a 1440 x 293 plate with a 102px corner radius at y = -182,
-so its bottom corners curve into the top of the frame. It is not reproduced: it
-read as a stray coloured band across the seam in both themes.
+## The hero video was the wrong file, not a playback bug
 
-### Interaction
+The hero appeared to loop after only 5–6 seconds. It wasn't a playback
+bug — the bundled `assets/video/hero-loop.mp4` genuinely was only 6.88s long.
+Tracing it back: the very first HTML build copied
+`uploads/video-1787280229481-dz69.mp4` from the Claude Design handoff bundle
+— a short preview clip the design tool ships alongside the real asset — and
+every later revision (including the React Native port) carried that same
+file forward as if it were the intended hero background. It never was; the
+actual marketing video (`Nested Sequence 01.mp4`, 1:39) lived in the user's
+Resources folder the whole time and was never substituted in.
 
-Every control has hover, press and focus states, a pointer cursor on web, and a
-keyboard focus ring. The ring follows `:focus-visible` semantics — it appears for
-tab users and stays out of a mouse user's way — implemented in
-`src/interaction.ts` by tracking the last input modality, since React Native has
-no `:focus-visible` of its own. State changes are animated with `Animated`
-rather than CSS transitions, which react-native-web does not accept as style
-props.
+Swapped in the real file, but not raw: the source is 123MB at a 10.3 Mbps
+average bitrate — an editor/camera export, not something any site would ship
+to visitors as a decorative muted background loop (for comparison, the
+placeholder clip it replaced, and most production hero videos, run
+well under 1 Mbps). Transcoded with the `imageio-ffmpeg`-bundled ffmpeg:
+H.264, CRF 26, audio stripped (the element is always muted, so the audio
+track was pure dead weight), `+faststart` for progressive playback. Result:
+**9.45MB for the full 99.25s loop, at 759 kb/s** — a ~13x reduction from the
+raw source, with no visible quality loss given the design layers a saturation
+filter and two dark gradient overlays on top of the video at all times.
 
-- **Category rail** — at rest each column shows an outlined number, title and
-  "View More" pill. Bringing a column forward (hover on web, tap on native)
-  floods it with the category's brand colour, drops in the product photo, and
-  moves the title and pill down the panel.
-- **Testimonials** — the carousel dots select a slide, which drives which card is
-  emphasised rather than being decorative.
-- **Login / Start For Free** — route to the sign-in screen.
-- **Scroll cues** — the chevrons at the foot of each section scroll to the next
-  one. They are decoration in the design, but a downward chevron pinned to the
-  bottom of a screen reads as a control, so it behaves like one.
-- **"Why Vendly ?" / "Why We Build Vendly"** — scroll to the About section. The
-  other two nav labels are inert on purpose: the design has no pricing screen and
-  its third label is literal placeholder text (`xxxxxxxxxxxx`), so giving them
-  destinations would mean inventing the site.
+Verified: `ffprobe` confirms `Duration: 00:01:39.25` on the shipped asset (not
+6.88s), and a fresh page load followed by a 9-second wait showed the video's
+`currentTime` advancing smoothly and continuously through — and well past —
+the old 6.88s truncation point, with no restart.
 
-### Forms
+## The bounce: root cause was React itself, not the measurement
 
-Both forms were shapes without behaviour; they now work as they look:
+A second recording, examined frame-by-frame (extracted at native ~29fps via
+ffmpeg and cross-correlated to measure per-frame vertical shift), showed a
+distinctive pattern at nearly every scroll: a burst of frames moving in the
+scroll direction, then 1–3 frames moving noticeably *backward*, before
+settling. That reversal never appeared in the page's ordinary (non-pinned)
+sections in the same recording — only around the transformation scene —
+which ruled out native scroll/OS momentum as the cause and pointed at
+something specific to how the scene applied its own transform.
 
-- **Newsletter** — validates on submit, shows an inline error, and replaces
-  itself with a confirmation naming the address, rather than leaving the reader
-  guessing whether it worked.
-- **Sign in** — validates both fields on submit (not per keystroke), moves focus
-  to the first field at fault, marks it `aria-invalid`, and offers a show/hide
-  password toggle. Fields carry `autoComplete` / `textContentType` so password
-  managers fill them. Submitting a valid pair says plainly that sign-in is not
-  connected to a backend yet, rather than silently doing nothing.
-- **Field labels** — the design labels its fields with placeholder text alone,
-  which vanishes as soon as anyone types, leaving a filled form of unlabelled
-  boxes. The label now floats into the top of the field once it is focused or
-  filled, so the resting state still matches the design while a filled field
-  still says what it holds.
+The mechanism: `readViewportTop` measures the true, current DOM position — no
+staleness there — but the previous version stored the resulting progress in
+React state (`setProgress`) and let JSX re-render every element from it. That
+put React's render → commit → paint cycle on the critical path between "the
+browser moved a pixel" and "the counter-transform reflects it." For a subtree
+this size (6 chaos cards, 11 chips, the OrderFlow window, two headline
+blocks), that cycle is reliably slower than a single scroll frame. Each tick,
+the pinned stage would render at its *old* position for one frame — visible as
+content sliding in the scroll direction, unpinning — then snap to correct once
+React finally committed. That snap is the bounce.
 
-## Where the design came from
+Fixed by removing React state from the scroll path entirely. `PinnedScene` now
+holds a ref per animated piece (the stage, the rail fill, both headline
+blocks, each chaos card, the window, each chip) and writes styles straight to
+the underlying node — `pose.web.ts` sets `node.style` directly (a
+react-native-web `View` ref *is* the DOM node); `pose.ts` calls
+`setNativeProps` for native. This is the standard "Direct Manipulation" escape
+hatch documented for exactly this situation in the React Native docs: bypass
+the reconciler for scroll-linked animation because reconciliation cannot keep
+up with scroll. Since a render can still happen for unrelated reasons (a
+window resize), the last-applied progress is kept in a ref and used as that
+render's style baseline, with an effect that immediately re-syncs the DOM to
+it — so an incidental re-render repaints the current position rather than
+visibly resetting to the start.
 
-Two different sources, because Figma Dev Mode was not available on the account's
-plan:
+Verified two ways:
+- **The DOM updates with no extra settle time.** Dispatching one scroll event
+  and checking the stage's transform after exactly one (mocked)
+  `requestAnimationFrame` tick — no additional wait — already matches the
+  exact expected value (`span × p`, e.g. 1512.39px at p=0.6 on a 2520px span).
+  Previously this needed an indeterminate additional wait for React to commit.
+- **React's own record of the style never changes.** Reading the stage node's
+  React fiber props before and after a scroll shows `translateY(0px)`
+  unchanged throughout, while the actual DOM `transform` moves to the correct
+  value — direct proof the update bypasses React's reconciler completely, so
+  there is no render/commit gap left for scroll to outrun.
 
-- **About** is the one screen taken from Figma directly (frame "Desktop - 3",
-  node `27:1324`), verified against `design/desktop-3-reference.png`.
-- **Everything else** comes from a 33-page PDF export of the file. Text in that
-  PDF is drawn as Type 3 vector glyphs, which means the glyph outlines carry
-  exact painted **ink** boxes and fills — better ground truth than measuring
-  pixels or inferring from font metrics. Positions, sizes, colours, panel and
-  button geometry and image placement rects were all read from there
-  programmatically.
+## On testing scroll-linked behaviour in this environment
 
-### Verification
+The browser pane used for testing runs hidden, where real
+`requestAnimationFrame` never fires — a real constraint, not a workaround. The
+fix above depends on rAF, so verifying it meant patching
+`window.requestAnimationFrame` to a `setTimeout(fn, 0)` shim in the test script
+itself (not in application code) before dispatching synthetic scroll events,
+which is a valid test technique since the app looks up the global at call
+time rather than capturing it at load. That is how the numbers above were
+produced. Programmatic `scrollTo()` (used for nav/footer jump links) stayed
+inert throughout — that one path is still unverified end-to-end, though the
+destination it computes is correct.
 
-Element boxes and glyph-ink positions were read out of the running app and
-compared against those extracted targets. Every text run checked lands within
-**0.5px** of the design, and the structural geometry is exact — the category
-columns (number at y=382.3, title at 508), the hover state's photo placement
-(`-119, 385, 485, 265`), and the sign-in card (`89, 104, 1258, 817`), fields and
-button all match their design coordinates exactly.
+## Tradeoffs of this stack
 
-The extraction approach also validated itself: re-deriving the already-verified
-About screen from the PDF reproduced the numbers measured from Figma earlier
-(nav at 254/35, copy block at 92/262.2, body at 395, outro at 899).
+Worth knowing, since these follow from React Native Web rather than from the design:
 
-Verification here is numeric rather than visual: the browser pane does not
-composite frames when it is not displayed, so no screenshot can be taken, and
-everything driven by the rendering lifecycle is suspended — animations, smooth
-scrolling, focus events and media playback all included. Worth an eyeball
-regardless.
+- **No server-rendered HTML.** The export is a single-page bundle
+  (`web.output: "single"`). Content is rendered client-side, so crawlers that
+  don't execute JS see an empty shell. This was deliberate: the layout is
+  entirely viewport-driven, and prerendering would bake in a wrong viewport and
+  reflow on hydration. If SEO matters more than that, Next.js is the better host
+  for this design.
+- **1.4MB JS bundle** (before gzip) for a marketing page, versus ~85KB of CSS+JS
+  in `legacy-static/`. That is the React Native Web runtime.
+- **The radial gradients are approximations.** Two of them — the hero's left
+  vignette and the CTA glow.
+- **The hero video is web-native, not `expo-video`.** `HeroVideo.web.tsx` uses a
+  real `<video>`; `HeroVideo.tsx` keeps `expo-video` for iOS/Android. Same
+  component name, resolved by platform.
+- `useWindowDimensions()` proved unreliable under react-native-web here: it
+  reported a stale size and missed resizes, which pinned every fluid value to its
+  minimum and flipped the desktop layout into its mobile composition. The app
+  measures its own root instead (`ViewportProvider`) and treats the window size
+  only as a first-paint seed.
 
-Those behaviours were instead verified by driving them directly and reading the
-result. Hover transitions the toggle's ground from `#e5e5ea` to `#dcdce1`; the
-scroll cues and nav jump to the right page; a keyboard-modality focus paints a
-3px ring while a mouse-modality focus paints none; the newsletter and sign-in
-forms produce their errors, their focus moves and their confirmations.
+## Native status
 
-The page fit is checked numerically at several viewport sizes: at 1920x1030 and
-1366x768 every page renders inside the viewport on both axes, the scroll extent
-comes to exactly five pages, the hero video sits fully on screen, and sign-in
-needs no scrolling at all.
+The components are platform-neutral and `npm run ios` / `npm run android`
+will build, but **the native targets have not been run or laid out**. The scroll
+scene, hover states and gradients all have native code paths; they need a device
+pass before anyone ships them.
 
-The one thing left unproven is the hero video actually playing. It reports loaded
-(`readyState: 4`), correctly boxed at `0, 304, 1280, 720`, looping and muted, but
-a document that is not compositing will not start media. The wiring is verified;
-the playing is not.
+## Not built
 
-## Deliberate deviations
-
-**Body font.** The About frame specifies *TharLon*, which is not published on
-Google Fonts, and the design itself renders it with an Arial-class fallback.
-**Arimo** is bundled instead — metric-compatible with Arial, so it reproduces the
-design identically across web, iOS and Android rather than inheriting three
-platform defaults. Line breaks in both body paragraphs fall exactly where the
-reference puts them.
-
-**CTA side padding.** "Start For Free" is set nowrap in the design and overflows
-the pill's 24px horizontal inset; reproducing that inset as real padding wraps
-the label onto two lines. The pill keeps its 157 × 51 box and 13/11 vertical
-padding — which is what places the label 1px below centre — but not the sides.
-
-**Normalised sloppiness.** The category rail staggers its resting titles and
-pills by up to 7px between columns and uses six near-but-not-equal number outline
-colours; both are normalised so the rail reads as one grid. Similarly, the hero's
-CTA and "Why We Build Vendly" link are painted *under* the illustration in the
-export and are invisible there — they are the screen's primary action, so they
-are drawn above it here, at the same coordinates.
-
-**One nav per section.** The design gives Hero, About and the footer their own
-nav bar and gives Categories and Testimonials none; that is reproduced rather
-than replaced with a single sticky header, since the sections' grounds differ too
-much (white, black, brand colours) for one floating bar to sit on cleanly.
-
-## Not yet built
-
-The PDF also contains full-screen category detail pages (a brand-coloured screen
-per category with the product shot and a "GO Back" control) reached from "View
-More". Those are not implemented — "View More" is currently a tappable control
-with no destination.
+Two sibling pages from the handoff were never in scope and do not exist:
+`Vendly Storefront.dc.html` and `COD Reliability.dc.html`. In the web build
+those links pointed at `storefront.html` / `cod-reliability.html`; here the nav,
+footer and body links scroll to the matching on-page sections instead, so
+nothing dead-ends.

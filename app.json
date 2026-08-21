@@ -1,36 +1,43 @@
 {
   "expo": {
-    "name": "Vendly Marketing Web",
-    "slug": "vendly-marketing-web",
+    "name": "Vendly OrderFlow",
+    "slug": "vendly-orderflow",
     "version": "1.0.0",
-    "orientation": "landscape",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#000000",
+    "orientation": "portrait",
+    "icon": "./assets/brand/vendly-mark-ink.png",
+    "scheme": "vendly",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "backgroundColor": "#F7F6F3",
+    "splash": {
+      "image": "./assets/brand/vendly-mark-ink.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0D12"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "lk.vendly.orderflow"
     },
     "android": {
+      "package": "lk.vendly.orderflow",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false
+        "foregroundImage": "./assets/brand/vendly-mark-light.png",
+        "backgroundColor": "#0B0D12"
+      }
     },
     "web": {
-      "favicon": "./assets/favicon.png",
-      "name": "Vendly.lk",
-      "shortName": "Vendly",
-      "description": "Vendly is a fraud detection tool for Sri Lankan e-commerce that scans and verifies your orders, so fake orders and courier returns stop eating your margin.",
-      "lang": "en",
-      "themeColor": "#000000",
-      "backgroundColor": "#e1e1e1"
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/brand/vendly-mark-ink.png"
     },
     "plugins": [
+      "expo-router",
       "expo-font",
-      "expo-video"
-    ]
+      "expo-video",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }
