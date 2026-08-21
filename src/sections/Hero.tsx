@@ -1,299 +1,401 @@
-import React, { useEffect, useState } from 'react';
-import {
-  AccessibilityInfo,
-  Animated,
-  AppState,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import Svg, { Path } from 'react-native-svg';
-
-import { Reveal, REVEAL_STAGGER } from '../components/Reveal';
-import { usePageScroll, useIsSectionActive } from '../components/ScaledPage';
-import { TopBar } from '../components/TopBar';
-import { clickable, focusRing, useInteraction, useToggleAnimation } from '../interaction';
-import { useNavigation } from '../Navigation';
-import { useTheme } from '../ThemeContext';
-import { colors, fonts } from '../theme';
-
-/**
- * The opening screen: "Build Your Empire Today!" over the illustration.
- *
- * In the design the CTA and the "Why We Build Vendly" link are painted *under*
- * the illustration and are therefore invisible in the export. They are the
- * screen's primary action, so they are drawn above it here — same coordinates,
- * corrected paint order.
- */
-
-export const HERO_HEIGHT = 1024;
-
-/** Ink-top targets read off the design's vector glyph boxes. */
-const HEADLINE_INK_TOP = 236.4;
-const HEADLINE_LINE_STEP = 93.4;
-/** line-box-top -> painted-cap-top for Outfit Bold at 64px, calibrated in-app. */
-const HEADLINE_INK_OFFSET = 17;
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { HeroVideo } from '@/components/HeroVideo';
+import { brand, icons, media, products } from '@/assets';
+import { Enter } from '@/components/Enter';
+import { Button } from '@/components/Button';
+import { WhatsAppIcon } from '@/components/icons';
+import { metrics, H1 } from '@/components/Type';
+import { color, font, layout, radius, shadow } from '@/theme/tokens';
+import { useViewport } from '@/theme/responsive';
+import { useScroll } from '@/scroll/ScrollProvider';
+import { useReducedMotion } from '@/theme/useReducedMotion';
 
 export function Hero() {
-  const { theme, themeName } = useTheme();
-  const { navigate } = useNavigation();
-  const { scrollToSection } = usePageScroll();
-  const onScreen = useIsSectionActive('hero');
-  const isDark = themeName === 'dark';
-  const [reduceMotion, setReduceMotion] = useState(false);
-  const [visible, setVisible] = useState(() => AppState.currentState !== 'background');
+  const { width, height, gutter, isMobile, f } = useViewport();
+  const { registerSection, scrollToSection } = useScroll();
+  const reduced = useReducedMotion();
 
-  // A 10s loop that plays on its own is exactly what "reduce motion" is for.
-  useEffect(() => {
-    let cancelled = false;
-    AccessibilityInfo.isReduceMotionEnabled().then(enabled => {
-      if (!cancelled) setReduceMotion(enabled);
-    });
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
-    return () => {
-      cancelled = true;
-      sub.remove();
-    };
-  }, []);
-
-  // Browsers stop background media to save power, and asking a hidden video to
-  // play just races that and rejects. Following the page's own visibility keeps
-  // the loop off while nobody is watching it.
-  //
-  // The test is "not backgrounded" rather than "is active" deliberately: if a
-  // platform reports some third state, the video should still play. Failing the
-  // other way would leave the hero permanently frozen on its poster.
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', state => setVisible(state !== 'background'));
-    return () => sub.remove();
-  }, []);
-
-  const player = useVideoPlayer(require('../../assets/site/hero.mp4'), instance => {
-    instance.loop = true;
-    instance.muted = true;
-  });
-
-  useEffect(() => {
-    if (reduceMotion || !visible) player.pause();
-    else player.play();
-  }, [player, reduceMotion, visible]);
+  const minHeight = Math.min(1000, Math.max(660, height));
 
   return (
-    <View style={[styles.section, { backgroundColor: theme.pageBg }]}>
-      {/* The still is a frame of the same sequence, so it sits underneath as the
-       *  poster: it covers the video's first paint and stands in wherever the
-       *  video cannot play. */}
-      <Image
-        source={require('../../assets/site/hero-illustration.jpg')}
-        style={styles.illustration}
-        resizeMode="cover"
-        accessibilityIgnoresInvertColors
-        accessibilityLabel="Seller overwhelmed by orders across chat apps and spreadsheets"
+    <View
+      ref={(node) => registerSection('top', node)}
+      style={{ minHeight, backgroundColor: color.ink, overflow: 'hidden' }}
+    >
+      {/* Background video — full-bleed, muted, looping */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <HeroVideo source={media.heroLoop} paused={reduced} />
+      </View>
+
+      {/* Vertical scrim */}
+      <LinearGradient
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+        colors={[
+          'rgba(11,13,18,0.90)',
+          'rgba(11,13,18,0.62)',
+          'rgba(11,13,18,0.72)',
+          'rgba(11,13,18,0.97)',
+        ]}
+        locations={[0, 0.34, 0.68, 1]}
       />
-      {!reduceMotion ? (
-        <VideoView
-          player={player}
-          style={styles.illustration}
-          contentFit="cover"
-          nativeControls={false}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        />
-      ) : null}
 
-      <Reveal visible={onScreen}>
-        <Text
-          style={[styles.headline, { top: HEADLINE_INK_TOP - HEADLINE_INK_OFFSET, color: theme.text }]}
+      {/* The design's left-edge radial vignette; React Native has no radial
+          gradient, so it is approximated with the equivalent horizontal ramp. */}
+      <LinearGradient
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+        colors={['rgba(11,13,18,0.86)', 'rgba(11,13,18,0.42)', 'rgba(11,13,18,0)']}
+        locations={[0, 0.42, 0.72]}
+        start={{ x: 0.08, y: 0.55 }}
+        end={{ x: 0.9, y: 0.55 }}
+      />
+
+      {/* Content */}
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          width: '100%',
+          maxWidth: layout.container,
+          alignSelf: 'center',
+          paddingTop: 132,
+          paddingBottom: 40,
+          paddingHorizontal: gutter,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: 'center',
+            gap: f(28, 4, 64),
+            width: '100%',
+          }}
         >
-          Build Your Empire
-        </Text>
-      </Reveal>
-      <Reveal visible={onScreen} delay={REVEAL_STAGGER}>
-        <Text
-          style={[
-            styles.headline,
-            {
-              top: HEADLINE_INK_TOP + HEADLINE_LINE_STEP - HEADLINE_INK_OFFSET,
-              color: isDark ? colors.accent : theme.text,
-            },
-          ]}
+          <View style={{ flex: isMobile ? undefined : 1.15, width: isMobile ? '100%' : undefined, maxWidth: 760 }}>
+            <Enter delay={0} duration={700} distance={0}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  alignSelf: 'flex-start',
+                  gap: 11,
+                  paddingVertical: 7,
+                  paddingLeft: 8,
+                  paddingRight: 14,
+                  borderWidth: 1,
+                  borderColor: color.white16,
+                  borderRadius: radius.pill,
+                  backgroundColor: color.white05,
+                  marginBottom: f(22, 3, 32),
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Image source={icons.facebook} style={{ width: 19, height: 19, borderRadius: 9.5 }} />
+                  <View style={{ marginLeft: -5, borderRadius: 5, borderWidth: 2, borderColor: color.ink }}>
+                    <WhatsAppIcon size={19} round={130} />
+                  </View>
+                  <Image
+                    source={icons.instagram}
+                    style={{ width: 19, height: 19, borderRadius: 5, marginLeft: -5, borderWidth: 2, borderColor: color.ink }}
+                  />
+                </View>
+                <Text
+                  style={[
+                    { fontFamily: font.mono, color: 'rgba(255,255,255,0.78)', textTransform: 'uppercase' },
+                    metrics(11, 1.4, 0.1),
+                  ]}
+                >
+                  Built for Sri Lankan social sellers
+                </Text>
+              </View>
+            </Enter>
+
+            <View style={{ marginBottom: f(20, 2.4, 30) }}>
+              <Enter delay={60}>
+                <H1>The Operating System</H1>
+              </Enter>
+              <Enter delay={150}>
+                <H1>for Facebook &amp;</H1>
+              </Enter>
+              <Enter delay={240}>
+                <H1 style={{ color: 'rgba(255,255,255,0.55)' }}>WhatsApp Businesses.</H1>
+              </Enter>
+            </View>
+
+            <Enter delay={340}>
+              <Text
+                style={[
+                  { fontFamily: font.body, color: color.white70, maxWidth: 560, marginBottom: f(28, 3.4, 40) },
+                  metrics(f(16, 1.35, 19), 1.55),
+                ]}
+              >
+                Keep selling in the chats your customers already use. OrderFlow organises everything behind them
+                — orders, customers, products, inventory, payments, courier and reports — in one place.
+              </Text>
+            </Enter>
+
+            <Enter delay={420}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+                <Button label="Get Started Free" arrow onPress={() => scrollToSection('get-started')} />
+                <Button label="See How It Works" variant="ghostInk" play onPress={() => scrollToSection('how-it-works')} />
+              </View>
+            </Enter>
+
+            <Enter delay={620} duration={900} distance={0}>
+              <Text
+                style={[
+                  {
+                    fontFamily: font.mono,
+                    color: color.white42,
+                    textTransform: 'uppercase',
+                    marginTop: f(30, 4, 46),
+                  },
+                  metrics(11, 1.4, 0.08),
+                ]}
+              >
+                Free to start · No website needed · Set up in an evening
+              </Text>
+            </Enter>
+          </View>
+
+          {/* The floating order card is dropped below 940px. */}
+          {!isMobile ? (
+            <Enter delay={520} duration={1100} style={{ flex: 0.85 }}>
+              <OrderCard />
+            </Enter>
+          ) : null}
+        </View>
+      </View>
+
+      {/* Footnote rail */}
+      <View style={{ borderTopWidth: 1, borderTopColor: color.white09, paddingVertical: 18, paddingHorizontal: gutter }}>
+        <View
+          style={{
+            width: '100%',
+            maxWidth: layout.container,
+            alignSelf: 'center',
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 14,
+          }}
         >
-          Today!
-        </Text>
-      </Reveal>
-
-      <Reveal visible={onScreen} delay={REVEAL_STAGGER * 2}>
-        <HeroCta bg={theme.ctaBg} label={theme.ctaLabel} onPress={() => navigate('signin')} />
-        <WhyLink color={theme.text} onPress={() => scrollToSection('about')} />
-      </Reveal>
-
-      <TopBar />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 }}>
+            <View style={{ width: 22, height: 1, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+            <Text
+              style={[
+                { fontFamily: font.mono, color: color.white40, textTransform: 'uppercase', flexShrink: 1 },
+                metrics(11, 1.4, 0.1),
+              ]}
+            >
+              Orders · Customers · Products · Inventory · Payments · Courier · Analytics · AI
+            </Text>
+          </View>
+          <ScrollCue />
+        </View>
+      </View>
     </View>
   );
 }
 
-/** The hero's primary action, matching the nav pill's hover behaviour. */
-function HeroCta({ bg, label, onPress }: { bg: string; label: string; onPress: () => void }) {
-  const { pressed, focusVisible, highlighted, handlers } = useInteraction();
-  const lift = useToggleAnimation(highlighted && !pressed, 160);
+function ScrollCue() {
+  const reduced = useReducedMotion();
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (reduced) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse, reduced]);
 
   return (
     <Animated.View
-      style={[
-        styles.ctaWrap,
-        {
-          transform: [
-            { translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, -2] }) },
-          ],
-        },
-      ]}
+      style={{
+        opacity: reduced ? 1 : pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }),
+        transform: [{ translateY: pulse.interpolate({ inputRange: [0, 1], outputRange: [0, 6] }) }],
+      }}
     >
-      <Pressable
-        accessibilityRole="button"
-        onPress={onPress}
-        {...handlers}
+      <Text
         style={[
-          styles.cta,
-          clickable,
-          { backgroundColor: bg, opacity: pressed ? 0.85 : 1 },
-          focusVisible && focusRing(colors.accent, 4),
+          { fontFamily: font.mono, color: color.white40, textTransform: 'uppercase' },
+          metrics(11, 1.4, 0.1),
         ]}
       >
-        <Text numberOfLines={1} style={[styles.ctaLabel, { color: label }]}>
-          Start For Free
-        </Text>
-      </Pressable>
+        Scroll ↓
+      </Text>
     </Animated.View>
   );
 }
 
-/** Light-on-dark and dark-on-light both need the same faint wash on hover. */
-function withAlpha(hex: string, alpha: number) {
-  const n = hex.replace('#', '');
-  const v = n.length === 3 ? n.split('').map(c => c + c).join('') : n;
-  const r = parseInt(v.slice(0, 2), 16);
-  const g = parseInt(v.slice(2, 4), 16);
-  const b = parseInt(v.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
+/* ------------------------------------------------------------- order card */
 
-/**
- * The secondary action, paired with the filled one the way the reference site
- * pairs its two: a filled pill for the primary, an outlined pill with a chevron
- * for the "tell me more" beside it. The design leaves this as bare text, which
- * reads as a footnote rather than the alternative route it is.
- */
-function WhyLink({ color, onPress }: { color: string; onPress: () => void }) {
-  const { hovered, pressed, focusVisible, highlighted, handlers } = useInteraction();
-  const grow = useToggleAnimation(highlighted);
-
+function OrderCard() {
   return (
-    <Animated.View
-      style={[
-        styles.whyLink,
-        {
-          transform: [
-            { translateY: grow.interpolate({ inputRange: [0, 1], outputRange: [0, -2] }) },
-          ],
-        },
-      ]}
-    >
-      <Pressable
-        accessibilityRole="link"
-        onPress={onPress}
-        {...handlers}
-        style={[
-          styles.whyPill,
-          clickable,
-          {
-            borderColor: color,
-            backgroundColor: hovered ? withAlpha(color, 0.1) : 'transparent',
-            opacity: pressed ? 0.7 : 1,
-          },
-          focusVisible && focusRing(color, 3),
-        ]}
+    <View>
+      <View
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.055)',
+          borderWidth: 1,
+          borderColor: color.white14,
+          borderRadius: radius.card,
+          padding: 18,
+          ...shadow.orderCard,
+        }}
       >
-        <Text style={[styles.whyLabel, { color }]}>Why We Build Vendly</Text>
-        <Svg width={17} height={17} viewBox="0 0 24 24">
-          <Path
-            d="M9 6l6 6-6 6"
-            fill="none"
-            stroke={color}
-            strokeWidth={2.4}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </Pressable>
-    </Animated.View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: 3.5,
+                backgroundColor: color.live,
+                borderWidth: 4,
+                borderColor: 'rgba(18,169,123,0.18)',
+              }}
+            />
+            <Text
+              style={[
+                { fontFamily: font.mono, color: color.white62, textTransform: 'uppercase' },
+                metrics(10.5, 1.4, 0.13),
+              ]}
+            >
+              New order received
+            </Text>
+          </View>
+          <Text style={[{ fontFamily: font.mono, color: color.white40 }, metrics(10.5, 1.4)]}>14:32</Text>
+        </View>
+
+        <View
+          style={{
+            backgroundColor: color.paper2,
+            borderRadius: radius.control,
+            padding: 16,
+            ...shadow.orderCardInner,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingBottom: 13,
+              borderBottomWidth: 1,
+              borderBottomColor: color.line,
+            }}
+          >
+            <Text style={[{ fontFamily: font.monoMedium, color: color.ink }, metrics(12, 1.4)]}>#ORD-2418</Text>
+            <View style={{ backgroundColor: color.accentWash, paddingVertical: 4, paddingHorizontal: 9, borderRadius: radius.badge }}>
+              <Text style={[{ fontFamily: font.bodySemi, color: color.accentHover }, metrics(11, 1.35)]}>
+                Via WhatsApp
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              paddingVertical: 13,
+              borderBottomWidth: 1,
+              borderBottomColor: 'rgba(11,13,18,0.06)',
+            }}
+          >
+            <Image
+              source={products.hoodie}
+              resizeMode="contain"
+              style={{ width: 40, height: 40, backgroundColor: color.wash, borderRadius: 8 }}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={[{ fontFamily: font.bodySemi, color: color.ink }, metrics(13.5, 1.35)]}>
+                Heavyweight Hoodie · XL
+              </Text>
+              <Text style={[{ fontFamily: font.body, color: color.textMuted, marginTop: 2 }, metrics(12, 1.35)]}>
+                Qty 1 · Charcoal
+              </Text>
+            </View>
+            <Text style={[{ fontFamily: font.monoMedium, color: color.ink }, metrics(13, 1.35)]}>Rs. 6,900</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 12, paddingTop: 13 }}>
+            {[
+              { label: 'Deliver to', value: 'Nugegoda, Colombo' },
+              { label: 'Payment', value: 'COD · Reliable' },
+            ].map((fact) => (
+              <View key={fact.label} style={{ flex: 1 }}>
+                <Text
+                  style={[
+                    { fontFamily: font.mono, color: color.textFaint, textTransform: 'uppercase', marginBottom: 4 },
+                    metrics(9.5, 1.4, 0.12),
+                  ]}
+                >
+                  {fact.label}
+                </Text>
+                <Text style={[{ fontFamily: font.bodyMedium, color: color.ink }, metrics(12.5, 1.35)]}>
+                  {fact.value}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 }}>
+          <View style={{ flex: 1, backgroundColor: color.paper2, padding: 10, borderRadius: 9 }}>
+            <Text style={[{ fontFamily: font.bodySemi, color: color.ink, textAlign: 'center' }, metrics(12.5, 1.3)]}>
+              Confirm
+            </Text>
+          </View>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: color.white08,
+              borderWidth: 1,
+              borderColor: color.white16,
+              padding: 10,
+              borderRadius: 9,
+            }}
+          >
+            <Text style={[{ fontFamily: font.bodyMedium, color: color.white80, textAlign: 'center' }, metrics(12.5, 1.3)]}>
+              Assign courier
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View
+        style={{
+          position: 'absolute',
+          left: -26,
+          bottom: -30,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          backgroundColor: color.paper2,
+          borderRadius: radius.control,
+          paddingVertical: 11,
+          paddingHorizontal: 14,
+          ...shadow.orderChat,
+        }}
+      >
+        <WhatsAppIcon size={22} round={130} />
+        <View>
+          <Text style={[{ fontFamily: font.body, color: color.textMuted }, metrics(12, 1.35)]}>Customer chat</Text>
+          <Text style={[{ fontFamily: font.bodySemi, color: color.ink }, metrics(13, 1.35)]}>
+            “Complete your order here.”
+          </Text>
+        </View>
+      </View>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  section: {
-    width: 1440,
-    height: HERO_HEIGHT,
-    overflow: 'hidden',
-  },
-  illustration: {
-    position: 'absolute',
-    left: 0,
-    top: 304,
-    width: 1280,
-    height: 720,
-  },
-  headline: {
-    position: 'absolute',
-    left: 21,
-    fontFamily: fonts.display,
-    fontSize: 64,
-    lineHeight: 93,
-  },
-  ctaWrap: {
-    position: 'absolute',
-    left: 40,
-    top: 899,
-  },
-  cta: {
-    width: 157,
-    height: 51,
-    borderRadius: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: colors.ctaBorder,
-  },
-  ctaLabel: {
-    fontFamily: fonts.cta,
-    fontSize: 18,
-  },
-  whyLink: {
-    position: 'absolute',
-    left: 227,
-    top: 899,
-  },
-  whyPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    height: 51,
-    paddingHorizontal: 24,
-    borderRadius: 56,
-    borderWidth: 2,
-  },
-  whyLabel: {
-    fontFamily: fonts.cta,
-    fontSize: 20,
-  },
-  whyUnderline: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: -3,
-    height: 2,
-    borderRadius: 1,
-  },
-});

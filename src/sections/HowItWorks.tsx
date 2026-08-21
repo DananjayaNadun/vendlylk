@@ -1,146 +1,84 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-import { Reveal, REVEAL_STAGGER } from '../components/Reveal';
-import { useIsSectionActive } from '../components/ScaledPage';
-import { clickable, focusRing, useInteraction } from '../interaction';
-import { useTheme } from '../ThemeContext';
-import { colors, fonts } from '../theme';
-import { GUTTER, SectionHeading, styles as kit } from './kit';
-
-/**
- * "Three steps to your first check" — the numbered walk-through the reference
- * site closes on, where each step is a row you can select and the selected one
- * carries the detail.
- *
- * No design export for this page; the steps are written from what the product
- * already claims elsewhere on the site.
- */
-
-export const HOWITWORKS_HEIGHT = 1024;
-
-const STEPS = [
-  {
-    n: '01',
-    title: 'Connect your store',
-    body: 'Point Vendly at wherever your orders land — your checkout, your chat inbox, or a plain CSV. Nothing to install on your storefront.',
-  },
-  {
-    n: '02',
-    title: 'Check the customer',
-    body: 'Paste a phone number and get their whole order history back: what they kept, what they refused, and which couriers they cost you.',
-  },
-  {
-    n: '03',
-    title: 'Ship with confidence',
-    body: 'Send the parcels worth sending. Ask the risky ones to prepay. Stop paying return freight on orders that were never going to land.',
-  },
-];
+import { Text, View } from 'react-native';
+import { Container, RuledTop, Section, SplitHead, useMeasuredWidth } from '@/components/Layout';
+import { Reveal } from '@/components/Reveal';
+import { H2Compact, H3Small, Note, metrics } from '@/components/Type';
+import { howItWorks } from '@/data';
+import { color, font } from '@/theme/tokens';
+import { autoFitColumns, trackWidth, useViewport } from '@/theme/responsive';
 
 export function HowItWorks() {
-  const { theme, themeName } = useTheme();
-  const onScreen = useIsSectionActive('howItWorks');
-  const [active, setActive] = useState(0);
-  const dark = themeName === 'dark';
-  const rule = dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.14)';
+  const { f } = useViewport();
 
   return (
-    <View style={[kit.section, { backgroundColor: theme.surface }]}>
-      <SectionHeading visible={onScreen} color={theme.text} top={168} width={900}>
-        Three steps to your{'\n'}first check.
-      </SectionHeading>
+    <Section id="how-it-works" flushTop>
+      <Container>
+        <RuledTop>
+          <Reveal index={0} style={{ marginBottom: f(40, 5, 60) }}>
+            <SplitHead
+              minItemWidth={280}
+              gap={f(28, 4, 56)}
+              left={<H2Compact style={{ maxWidth: 520 }}>How OrderFlow works</H2Compact>}
+              right={
+                <Note style={{ maxWidth: 460 }}>
+                  Four steps, from the first message to a paid, delivered, recorded order.
+                </Note>
+              }
+            />
+          </Reveal>
 
-      {STEPS.map((step, index) => (
-        <Reveal key={step.n} visible={onScreen} delay={REVEAL_STAGGER * (2 + index)}>
-          <Step
-            step={step}
-            top={430 + index * 148}
-            selected={index === active}
-            onSelect={() => setActive(index)}
-            text={theme.text}
-            muted={theme.textMuted}
-            rule={rule}
-          />
-        </Reveal>
+          <Reveal index={1}>
+            <Steps />
+          </Reveal>
+        </RuledTop>
+      </Container>
+    </Section>
+  );
+}
+
+/**
+ * A 1px-gap grid whose gutters read as hairlines — the CSS used a `gap: 1px`
+ * grid over a line-coloured background, which is reproduced here with borders
+ * computed from the resolved column count.
+ */
+function Steps() {
+  const { f } = useViewport();
+  const [width, onLayout] = useMeasuredWidth();
+  const columns = width > 0 ? autoFitColumns(width, 240, 1) : 1;
+  const track = width > 0 ? trackWidth(width, columns, 1) : 0;
+
+  return (
+    <View
+      onLayout={onLayout}
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 1,
+        backgroundColor: color.lineStrong,
+        borderWidth: 1,
+        borderColor: color.lineStrong,
+        borderRadius: 16,
+        overflow: 'hidden',
+      }}
+    >
+      {howItWorks.map((step, i) => (
+        <View
+          key={step.title}
+          style={{
+            width: track || '100%',
+            maxWidth: '100%',
+            minHeight: 210,
+            backgroundColor: color.paper,
+            padding: f(22, 2.4, 30),
+          }}
+        >
+          <Text style={[{ fontFamily: font.mono, color: color.accent, marginBottom: 22 }, metrics(12, 1.4)]}>
+            {String(i + 1).padStart(2, '0')}
+          </Text>
+          <H3Small style={{ marginBottom: 10 }}>{step.title}</H3Small>
+          <Text style={[{ fontFamily: font.body, color: color.textMuted }, metrics(14, 1.55)]}>{step.body}</Text>
+        </View>
       ))}
     </View>
   );
 }
-
-function Step({
-  step,
-  top,
-  selected,
-  onSelect,
-  text,
-  muted,
-  rule,
-}: {
-  step: (typeof STEPS)[number];
-  top: number;
-  selected: boolean;
-  onSelect: () => void;
-  text: string;
-  muted: string;
-  rule: string;
-}) {
-  const { hovered, focusVisible, handlers } = useInteraction();
-  const lit = selected || hovered;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Step ${step.n}: ${step.title}`}
-      accessibilityState={{ selected }}
-      onPress={onSelect}
-      {...handlers}
-      style={[styles.row, { top }, clickable, focusVisible && focusRing(colors.accent, 4)]}
-    >
-      <View style={[styles.rule, { backgroundColor: lit ? colors.accent : rule }]} />
-      <Text style={[styles.n, { color: lit ? colors.accent : muted }]}>{step.n}</Text>
-      <Text style={[styles.title, { color: text, opacity: lit ? 1 : 0.65 }]}>{step.title}</Text>
-      <Text style={[styles.body, { color: muted, opacity: selected ? 1 : 0 }]}>{step.body}</Text>
-    </Pressable>
-  );
-}
-
-const styles = StyleSheet.create({
-  row: {
-    position: 'absolute',
-    left: GUTTER,
-    width: 1256,
-    height: 132,
-  },
-  rule: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: 1256,
-    height: 2,
-  },
-  n: {
-    position: 'absolute',
-    left: 0,
-    top: 30,
-    fontFamily: fonts.ui,
-    fontSize: 22,
-  },
-  title: {
-    position: 'absolute',
-    left: 96,
-    top: 22,
-    width: 460,
-    fontFamily: fonts.display,
-    fontSize: 34,
-    lineHeight: 42,
-  },
-  body: {
-    position: 'absolute',
-    left: 610,
-    top: 26,
-    width: 646,
-    fontFamily: fonts.cta,
-    fontSize: 19,
-    lineHeight: 29,
-  },
-});
