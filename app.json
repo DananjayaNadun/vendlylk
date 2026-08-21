@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Vendly OrderFlow",
+    "slug": "vendly-orderflow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/brand/vendly-mark-ink.png",
+    "scheme": "vendly",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "backgroundColor": "#F7F6F3",
+    "splash": {
+      "image": "./assets/brand/vendly-mark-ink.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0D12"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "lk.vendly.orderflow"
+    },
+    "android": {
+      "package": "lk.vendly.orderflow",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/vendly-mark-light.png",
+        "backgroundColor": "#0B0D12"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/brand/vendly-mark-ink.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-video"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
