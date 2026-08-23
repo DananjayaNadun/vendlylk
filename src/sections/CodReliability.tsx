@@ -24,7 +24,7 @@ export function CodReliability() {
               <H2 style={{ color: color.white, marginBottom: 20 }}>Stop paying for parcels that come back.</H2>
               <Lede style={{ color: color.white62, maxWidth: 540, marginBottom: 30 }}>
                 When the same customer refuses cash-on-delivery again and again, you pay the courier both ways.
-                OrderFlow keeps that history for you and quietly adjusts what that customer can choose at checkout.
+                Vendly.lk keeps that history for you and quietly adjusts what that customer can choose at checkout.
               </Lede>
 
               <View style={{ gap: 14, marginBottom: 32 }}>

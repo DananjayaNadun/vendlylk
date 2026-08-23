@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 /**
  * React Native's <Image> cannot render SVG, so the three supplied vector icons
@@ -38,16 +38,55 @@ export function YouTubeIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-export function XIcon({ size = 19 }: { size?: number }) {
+/**
+ * The current X brand mark (the bare glyph, per X's own brand assets and the
+ * Simple Icons set) — replaces the circular twitter-era logo that shipped in
+ * the handoff's `uploads/`.
+ */
+export function XIcon({ size = 19, fill = '#0B0D12' }: { size?: number; fill?: string }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 1668.56 1221.19" accessibilityLabel="X">
-      <Circle cx={834.28} cy={610.6} r={481.33} fill="#000000" stroke="#FFFFFF" />
-      <G transform="translate(52.390088,-25.058597)">
-        <Path
-          fill="#FFFFFF"
-          d="M485.39,356.79l230.07,307.62L483.94,914.52h52.11l202.7-218.98l163.77,218.98h177.32L836.82,589.6l215.5-232.81h-52.11L813.54,558.46L662.71,356.79H485.39z M562.02,395.17h81.46l359.72,480.97h-81.46L562.02,395.17z"
-        />
-      </G>
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityLabel="X">
+      <Path
+        fill={fill}
+        d="M18.901 1.153h3.68l-8.04 9.557L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"
+      />
+    </Svg>
+  );
+}
+
+/** Google's official four-colour "G" mark. */
+export function GoogleIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 48 48" accessibilityLabel="Google">
+      <Path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5Z" />
+      <Path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.6 8.3 6.3 14.7Z" />
+      <Path fill="#4CAF50" d="M24 44c5.4 0 10.3-2.1 14-5.5l-6.5-5.4C29.4 34.9 26.8 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44Z" />
+      <Path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.5 5.4C41.3 36.6 44 30.9 44 24c0-1.3-.1-2.7-.4-3.5Z" />
+    </Svg>
+  );
+}
+
+/** Apple's silhouette mark. */
+export function AppleIcon({ size = 20, fill = '#000000' }: { size?: number; fill?: string }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" accessibilityLabel="Apple">
+      <Path
+        fill={fill}
+        d="M16.365 1.43c0 1.14-.415 2.06-1.244 2.87-.898.86-1.98 1.36-3.03 1.28-.126-1.1.417-2.13 1.243-2.93.86-.83 2.13-1.34 3.03-1.22ZM20.6 17.06c-.44 1-.86 1.83-1.44 2.6-.8 1.07-1.62 2.14-2.9 2.16-1.24.02-1.65-.74-3.07-.74-1.42 0-1.87.72-3.04.76-1.24.05-2.18-1.16-2.99-2.22-1.65-2.18-2.92-6.15-1.22-8.83.84-1.34 2.35-2.19 3.99-2.21 1.19-.02 2.3.8 3.02.8.71 0 2.06-.99 3.47-.85.59.02 2.25.24 3.32 1.8-.09.05-1.98 1.16-1.96 3.45.02 2.75 2.4 3.66 2.83 3.24Z"
+      />
+    </Svg>
+  );
+}
+
+/** Facebook's rounded "f" mark. */
+export function FacebookIcon({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 72 72" accessibilityLabel="Facebook">
+      <Circle cx={36} cy={36} r={36} fill="#1877F2" />
+      <Path
+        fill="#FFFFFF"
+        d="M48 36l1.3-8.5h-8.2v-5.5c0-2.3 1.1-4.6 4.8-4.6h3.7v-7.3s-3.4-.6-6.6-.6c-6.7 0-11.1 4.1-11.1 11.4v6.6h-7.5V36h7.5v20.6c1.5.2 3 .4 4.6.4s3.1-.1 4.6-.4V36h6.9Z"
+      />
     </Svg>
   );
 }

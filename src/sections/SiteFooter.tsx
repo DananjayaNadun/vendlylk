@@ -39,7 +39,7 @@ export function SiteFooter() {
 
   return (
     <View
-      onLayout={(e) => registerSection('resources', e.nativeEvent.layout.y)}
+      ref={(node) => registerSection('resources', node)}
       style={{
         backgroundColor: color.ink,
         paddingTop: f(56, 8, 96),
@@ -67,7 +67,7 @@ export function SiteFooter() {
             </View>
 
             <Text style={[{ fontFamily: font.body, color: color.white50, marginBottom: 22 }, metrics(14.5, 1.6)]}>
-              OrderFlow is the operating system for businesses that sell through Facebook and WhatsApp. Built in Sri
+              Vendly.lk is the operating system for businesses that sell through Facebook and WhatsApp. Built in Sri
               Lanka, for Sri Lankan businesses.
             </Text>
 
@@ -85,7 +85,7 @@ export function SiteFooter() {
                 <YouTubeIcon size={18} />
               </Social>
               <Social label="X" light>
-                <XIcon size={19} />
+                <XIcon size={17} />
               </Social>
             </View>
           </View>
@@ -105,7 +105,6 @@ export function SiteFooter() {
                   <FooterLink
                     key={link}
                     label={link}
-                    status={link === 'Status'}
                     onPress={() => {
                       const target = TARGETS[link];
                       if (target) scrollToSection(target);
@@ -163,12 +162,10 @@ function FooterLink({
   label,
   onPress,
   small = false,
-  status = false,
 }: {
   label: string;
   onPress?: () => void;
   small?: boolean;
-  status?: boolean;
 }) {
   const [hover, setHover] = useState(false);
 
@@ -180,18 +177,6 @@ function FooterLink({
       onHoverOut={() => setHover(false)}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
-        {status ? (
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: color.live,
-              borderWidth: 3,
-              borderColor: 'rgba(18,169,123,0.16)',
-            }}
-          />
-        ) : null}
         <Text
           style={[
             { fontFamily: font.body, color: hover ? color.white : small ? color.white55 : color.white72 },

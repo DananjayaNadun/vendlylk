@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Animated, Image, Text, View } from 'react-native';
+import React, { memo, useCallback, useEffect, useRef } from 'react';
+import { Image, Platform, Text, View, ViewStyle } from 'react-native';
 import { brand, icons } from '@/assets';
 import { WhatsAppIcon } from '@/components/icons';
 import { Badge } from '@/components/UI';
@@ -8,49 +8,18 @@ import { metrics } from '@/components/Type';
 import { chaosCards, moduleChips, sceneNav, sceneOrders } from '@/data';
 import { color, font, layout, radius, shadow } from '@/theme/tokens';
 import { useViewport } from '@/theme/responsive';
-import { useScroll } from '@/scroll/ScrollProvider';
+import { useScroll, useScrollListener } from '@/scroll/ScrollProvider';
+import { readViewportTop } from '@/scroll/measure';
+import { applyPose } from '@/scroll/pose';
 import { useReducedMotion } from '@/theme/useReducedMotion';
 
+/* The prototype's helpers, unchanged. */
 const ease = (t: number) => 1 - Math.pow(1 - t, 3);
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
 
-/**
- * Samples an arbitrary progress function into an Animated interpolation.
- *
- * The prototype drove this scene from a rAF scroll handler, so it could apply
- * easing and clamping in plain arithmetic. Animated only interpolates linearly
- * between stops, so each curve is sampled into enough stops to be
- * indistinguishable, and the maths itself is copied verbatim.
- */
-function sampled(
-  node: Animated.Value,
-  startPx: number,
-  endPx: number,
-  fn: (t: number) => number,
-  steps = 24,
-) {
-  if (!(endPx > startPx)) return fn(1);
-  const inputRange: number[] = [];
-  const outputRange: number[] = [];
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    inputRange.push(startPx + (endPx - startPx) * t);
-    outputRange.push(fn(t));
-  }
-  return node.interpolate({ inputRange, outputRange, extrapolate: 'clamp' });
-}
-
-function sampledDeg(node: Animated.Value, startPx: number, endPx: number, fn: (t: number) => number, steps = 24) {
-  if (!(endPx > startPx)) return `${fn(1)}deg`;
-  const inputRange: number[] = [];
-  const outputRange: string[] = [];
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    inputRange.push(startPx + (endPx - startPx) * t);
-    outputRange.push(`${fn(t)}deg`);
-  }
-  return node.interpolate({ inputRange, outputRange, extrapolate: 'clamp' });
-}
+/** See the comment at the heads box below. */
+const HEADS_TOP_CLEARANCE = 150;
 
 export function Transformation() {
   const { isMobile } = useViewport();
@@ -61,50 +30,130 @@ export function Transformation() {
 
 function PinnedScene() {
   const { width, height, gutter, f } = useViewport();
-  const { scrollY, registerSection } = useScroll();
+  const { registerSection } = useScroll();
   const reduced = useReducedMotion();
-  const [top, setTop] = useState<number | null>(null);
+
+  const sceneRef = useRef<View | null>(null);
+  const stageRef = useRef<View | null>(null);
+  const railFillRef = useRef<View | null>(null);
+  const beforeRef = useRef<View | null>(null);
+  const afterRef = useRef<View | null>(null);
+  const windowRef = useRef<View | null>(null);
+  const chaosRefs = useRef<(View | null)[]>(chaosCards.map(() => null));
+  const chipRefs = useRef<(View | null)[]>(moduleChips.map(() => null));
+
+  /** Progress the scene last painted, kept outside React state. A render
+      triggered for an unrelated reason (the viewport resizing) uses this as
+      its style baseline, so it repaints the current position instead of
+      snapping back to 0 — see the effect below. */
+  const lastP = useRef(reduced ? 1 : 0);
 
   /* 380vh section over a 100vh stage. */
   const sectionHeight = reduced ? height : height * 3.8;
   const span = sectionHeight - height;
-  const measured = top != null && span > 0 && !reduced;
-
-  /** Converts a scene progress value (0–1) into a scroll offset in pixels. */
-  const at = (p: number) => (top ?? 0) + span * p;
 
   /* Scale the scatter down on smaller viewports so nothing clips. */
   const k = Math.min(1, width / 1380) * Math.min(1, height / 820);
 
-  const stickyOffset = measured
-    ? scrollY.interpolate({
-        inputRange: [top!, top! + span],
-        outputRange: [0, span],
-        extrapolate: 'clamp',
-      })
-    : 0;
+  /**
+   * Writes one frame straight to the underlying nodes — see `pose.ts` for why
+   * this bypasses React state entirely. This is the design source's exact
+   * arithmetic, just applied imperatively instead of through re-render.
+   */
+  const applyFrame = useCallback(
+    (p: number, stick: number) => {
+      lastP.current = p;
 
-  const railHeight = measured
-    ? scrollY.interpolate({
-        inputRange: [top!, top! + span],
-        outputRange: ['0%', '100%'],
-        extrapolate: 'clamp',
-      })
-    : reduced
-      ? '100%'
-      : '0%';
+      applyPose(stageRef, { transforms: [{ type: 'translate', y: stick }] });
+      applyPose(railFillRef, { heightPercent: p * 100 });
+
+      const beforeT = seg(p, 0.06, 0.3);
+      applyPose(beforeRef, {
+        opacity: 1 - beforeT,
+        transforms: [{ type: 'translate', y: beforeT * -18 }],
+      });
+
+      const afterT = ease(seg(p, 0.34, 0.6));
+      applyPose(afterRef, {
+        opacity: afterT,
+        transforms: [{ type: 'translate', y: (1 - afterT) * 18 }],
+      });
+
+      const windowT = ease(seg(p, 0.3, 0.68));
+      applyPose(windowRef, {
+        opacity: windowT,
+        transforms: [
+          { type: 'scale', value: 0.9 + windowT * 0.1 },
+          { type: 'translate', y: (1 - windowT) * 26 },
+        ],
+      });
+
+      chaosCards.forEach((card, i) => {
+        const t = ease(seg(p, 0.02 + i * 0.035, 0.46 + i * 0.035));
+        applyPose(
+          { current: chaosRefs.current[i] },
+          {
+            opacity: clamp01(1 - t * 1.35),
+            transforms: [
+              { type: 'translate', x: card.x * k * (1 - t), y: card.y * k * (1 - t) },
+              { type: 'rotate', deg: card.rot * (1 - t) },
+              { type: 'scale', value: 1 - t * 0.42 },
+            ],
+            blurPx: t * 3,
+          },
+        );
+      });
+
+      moduleChips.forEach((_, i) => {
+        const t = ease(seg(p, 0.58 + i * 0.028, 0.72 + i * 0.028));
+        applyPose(
+          { current: chipRefs.current[i] },
+          { opacity: t, transforms: [{ type: 'translate', y: (1 - t) * 14 }] },
+        );
+      });
+    },
+    [k],
+  );
+
+  useScrollListener(
+    useCallback(() => {
+      if (reduced || span <= 0) return;
+      const top = readViewportTop(sceneRef.current);
+      if (top == null) return;
+      applyFrame(clamp01(-top / span), Math.min(span, Math.max(0, -top)));
+    }, [reduced, span, applyFrame]),
+  );
+
+  /* A render for any other reason (e.g. resize) rebuilds this JSX from
+     lastP, so it must be repainted immediately afterward to stay in sync —
+     the render itself doesn't touch the refs. */
+  useEffect(() => {
+    const stick = span > 0 ? Math.min(span, Math.max(0, lastP.current * span)) : 0;
+    applyFrame(lastP.current, stick);
+  }, [applyFrame, span]);
 
   const headPad = f(56, 7, 96);
+  const windowWidth = Math.min(880, width * 0.78);
+
+  /* First-paint (and post-resize) baseline — see `lastP` above. */
+  const p0 = lastP.current;
+  const stick0 = span > 0 ? Math.min(span, Math.max(0, p0 * span)) : 0;
+  const before0T = seg(p0, 0.06, 0.3);
+  const after0T = ease(seg(p0, 0.34, 0.6));
+  const window0T = ease(seg(p0, 0.3, 0.68));
 
   return (
     <View
-      onLayout={(e) => {
-        registerSection('transform', e.nativeEvent.layout.y);
-        setTop(e.nativeEvent.layout.y);
+      ref={(node) => {
+        sceneRef.current = node;
+        registerSection('transform', node);
       }}
       style={{ height: sectionHeight, backgroundColor: color.ink }}
     >
-      <Animated.View
+      {/* Stands in for `position: sticky` — the stage tracks the scroll so it
+          holds still in the viewport for the length of the section. */}
+      <View
+        ref={stageRef}
         style={{
           position: 'absolute',
           top: 0,
@@ -113,18 +162,32 @@ function PinnedScene() {
           height,
           overflow: 'hidden',
           justifyContent: 'center',
-          transform: [{ translateY: stickyOffset as any }],
+          transform: [{ translateY: stick0 }],
         }}
       >
         {/* Progress rail */}
-        <View style={{ position: 'absolute', top: 0, bottom: 0, left: gutter, width: 1, backgroundColor: color.lineInk }}>
-          <Animated.View style={{ width: 1, height: railHeight as any, backgroundColor: color.accent }} />
+        <View
+          style={{ position: 'absolute', top: 0, bottom: 0, left: gutter, width: 1, backgroundColor: color.lineInk }}
+        >
+          <View ref={railFillRef} style={{ width: 1, height: `${p0 * 100}%`, backgroundColor: color.accent }} />
         </View>
 
-        {/* Before / after headlines */}
+        {/* Before / after headlines.
+            The fixed nav overlays the top `navHeight` px of the viewport at
+            every scroll position. The heads box sits flush at the top of the
+            stage, and because the chaos field below it has flex:1 and soaks
+            up all remaining height, centering the stage's children has no
+            room to act on — so without this, the heading's top edge lands
+            under the nav and shows through it. Extra top clearance here
+            pushes the (bottom-anchored) text down until it fully clears the
+            nav, without moving the chaos field or chips below it. The number
+            is calibrated against the heading at its largest clamped size
+            (reached at 1333px+ width, where it stops growing) plus a ~30px
+            gap below the nav — narrower supported widths get a shorter
+            heading and so end up with more clearance, never less. */}
         <View
           style={{
-            height: 156,
+            height: 156 + HEADS_TOP_CLEARANCE,
             width: '100%',
             maxWidth: layout.container,
             alignSelf: 'center',
@@ -132,16 +195,15 @@ function PinnedScene() {
             justifyContent: 'flex-end',
           }}
         >
-          <Animated.View
+          <View
+            ref={beforeRef}
             style={{
               position: 'absolute',
               left: headPad,
               right: 0,
               bottom: 0,
-              opacity: measured ? (sampled(scrollY, at(0.06), at(0.3), (t) => 1 - t) as any) : reduced ? 0 : 1,
-              transform: [
-                { translateY: measured ? (sampled(scrollY, at(0.06), at(0.3), (t) => t * -18) as any) : 0 },
-              ],
+              opacity: 1 - before0T,
+              transform: [{ translateY: before0T * -18 }],
             }}
           >
             <SceneKicker label="Before" />
@@ -149,73 +211,79 @@ function PinnedScene() {
               Messages. Notes. Spreadsheets.
               <Text style={{ color: color.white45 }}> Manual work. Courier losses.</Text>
             </SceneTitle>
-          </Animated.View>
+          </View>
 
-          <Animated.View
+          <View
+            ref={afterRef}
             style={{
               position: 'absolute',
               left: headPad,
               right: 0,
               bottom: 0,
-              opacity: measured ? (sampled(scrollY, at(0.34), at(0.6), ease) as any) : reduced ? 1 : 0,
-              transform: [
-                { translateY: measured ? (sampled(scrollY, at(0.34), at(0.6), (t) => (1 - ease(t)) * 18) as any) : 0 },
-              ],
+              opacity: after0T,
+              transform: [{ translateY: (1 - after0T) * 18 }],
             }}
           >
             <SceneKicker label="After" accent />
             <SceneTitle>One system your whole business runs on.</SceneTitle>
-          </Animated.View>
+          </View>
         </View>
 
-        {/* Chaos field + converged window */}
+        {/* Chaos field converging on the Vendly.lk window */}
         <View style={{ flex: 1, minHeight: 0 }}>
-          {!reduced
-            ? chaosCards.map((card, i) => {
-                const start = at(0.02 + i * 0.035);
-                const end = at(0.46 + i * 0.035);
-                return (
-                  <Animated.View
-                    key={i}
-                    style={{
-                      position: 'absolute',
-                      left: '50%',
-                      top: '50%',
-                      width: card.width,
-                      marginLeft: -card.width / 2,
-                      marginTop: card.offsetY,
-                      opacity: measured ? (sampled(scrollY, start, end, (t) => clamp01(1 - ease(t) * 1.35)) as any) : 1,
-                      transform: [
-                        { translateX: measured ? (sampled(scrollY, start, end, (t) => card.x * k * (1 - ease(t))) as any) : card.x * k },
-                        { translateY: measured ? (sampled(scrollY, start, end, (t) => card.y * k * (1 - ease(t))) as any) : card.y * k },
-                        { rotate: measured ? (sampledDeg(scrollY, start, end, (t) => card.rot * (1 - ease(t))) as any) : `${card.rot}deg` },
-                        { scale: measured ? (sampled(scrollY, start, end, (t) => 1 - ease(t) * 0.42) as any) : 1 },
-                      ],
-                    }}
-                  >
-                    <ChaosCard index={i} />
-                  </Animated.View>
-                );
-              })
-            : null}
+          {chaosCards.map((card, i) => {
+            const t0 = ease(seg(p0, 0.02 + i * 0.035, 0.46 + i * 0.035));
+            const blur0 = t0 * 3;
+            return (
+              <View
+                key={i}
+                ref={(node) => {
+                  chaosRefs.current[i] = node;
+                }}
+                style={[
+                  {
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: card.width,
+                    marginLeft: -card.width / 2,
+                    marginTop: card.offsetY,
+                    opacity: clamp01(1 - t0 * 1.35),
+                    transform: [
+                      { translateX: card.x * k * (1 - t0) },
+                      { translateY: card.y * k * (1 - t0) },
+                      { rotate: `${card.rot * (1 - t0)}deg` },
+                      { scale: 1 - t0 * 0.42 },
+                    ],
+                  },
+                  /* React Native has no blur filter; on web it is a real style. */
+                  Platform.OS === 'web' && blur0 > 0.01
+                    ? ({ filter: `blur(${blur0}px)` } as unknown as ViewStyle)
+                    : null,
+                ]}
+                pointerEvents="none"
+              >
+                <ChaosCard index={i} />
+              </View>
+            );
+          })}
 
-          <Animated.View
+          <View
+            ref={windowRef}
             style={{
               position: 'absolute',
               left: '50%',
               top: '50%',
-              width: Math.min(880, width * 0.78),
-              marginLeft: -Math.min(880, width * 0.78) / 2,
+              width: windowWidth,
+              marginLeft: -windowWidth / 2,
               marginTop: -170,
-              opacity: measured ? (sampled(scrollY, at(0.3), at(0.68), ease) as any) : reduced ? 1 : 0,
-              transform: [
-                { scale: measured ? (sampled(scrollY, at(0.3), at(0.68), (t) => 0.9 + ease(t) * 0.1) as any) : reduced ? 1 : 0.9 },
-                { translateY: measured ? (sampled(scrollY, at(0.3), at(0.68), (t) => (1 - ease(t)) * 26) as any) : reduced ? 0 : 26 },
-              ],
+              opacity: window0T,
+              transform: [{ scale: 0.9 + window0T * 0.1 }, { translateY: (1 - window0T) * 26 }],
             }}
+            pointerEvents="none"
           >
             <SceneWindow />
-          </Animated.View>
+          </View>
         </View>
 
         {/* Module chips */}
@@ -230,25 +298,22 @@ function PinnedScene() {
         >
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {moduleChips.map((chip, i) => {
-              const start = at(0.58 + i * 0.028);
-              const end = at(0.72 + i * 0.028);
+              const t0 = ease(seg(p0, 0.58 + i * 0.028, 0.72 + i * 0.028));
               return (
-                <Animated.View
+                <View
                   key={chip}
-                  style={{
-                    opacity: measured ? (sampled(scrollY, start, end, ease) as any) : reduced ? 1 : 0,
-                    transform: [
-                      { translateY: measured ? (sampled(scrollY, start, end, (t) => (1 - ease(t)) * 14) as any) : 0 },
-                    ],
+                  ref={(node) => {
+                    chipRefs.current[i] = node;
                   }}
+                  style={{ opacity: t0, transform: [{ translateY: (1 - t0) * 14 }] }}
                 >
                   <ModuleChip label={chip} on={i === 0} />
-                </Animated.View>
+                </View>
               );
             })}
           </View>
         </View>
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -288,7 +353,7 @@ function SceneTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ModuleChip({ label, on }: { label: string; on: boolean }) {
+const ModuleChip = memo(function ModuleChip({ label, on }: { label: string; on: boolean }) {
   return (
     <View
       style={{
@@ -300,16 +365,15 @@ function ModuleChip({ label, on }: { label: string; on: boolean }) {
         borderRadius: radius.chip,
       }}
     >
-      <Text
-        style={[{ fontFamily: font.mono, color: on ? color.white : color.white82 }, metrics(11, 1.4, 0.06)]}
-      >
+      <Text style={[{ fontFamily: font.mono, color: on ? color.white : color.white82 }, metrics(11, 1.4, 0.06)]}>
         {label}
       </Text>
     </View>
   );
-}
+});
 
-function ChaosCard({ index }: { index: number }) {
+/* Memoised so the per-frame progress updates only touch wrapper styles. */
+const ChaosCard = memo(function ChaosCard({ index }: { index: number }) {
   const shell = {
     backgroundColor: index === 2 ? color.paperNote : color.paper2,
     borderRadius: 13,
@@ -429,9 +493,9 @@ function ChaosCard({ index }: { index: number }) {
       <Text style={[{ fontFamily: font.body, color: color.ink }, metrics(12.5, 1.4)]}>“Is delivery free?”</Text>
     </View>
   );
-}
+});
 
-function SceneWindow() {
+const SceneWindow = memo(function SceneWindow() {
   return (
     <View style={{ backgroundColor: color.paper2, borderRadius: 16, overflow: 'hidden', ...shadow.sceneWindow }}>
       <View
@@ -455,7 +519,7 @@ function SceneWindow() {
               metrics(9.5, 1.4, 0.12),
             ]}
           >
-            OrderFlow
+            Vendly.lk
           </Text>
         </View>
         <View style={{ flex: 1 }} />
@@ -533,30 +597,27 @@ function SceneWindow() {
             </View>
           </View>
 
-          <View
-            style={{
-              flexDirection: 'row',
-              gap: 10,
-              paddingBottom: 9,
-              borderBottomWidth: 1,
-              borderBottomColor: color.line,
-            }}
-          >
-            {['Order', 'Customer', 'Total', 'Status'].map((headCell, i) => (
+          <View style={{ flexDirection: 'row', gap: 10, paddingBottom: 9, borderBottomWidth: 1, borderBottomColor: color.line }}>
+            {[
+              { label: 'Order', w: 88 },
+              { label: 'Customer', w: undefined },
+              { label: 'Total', w: 96 },
+              { label: 'Status', w: 92 },
+            ].map((head) => (
               <Text
-                key={headCell}
+                key={head.label}
                 style={[
                   {
                     fontFamily: font.mono,
                     color: color.textFaint,
                     textTransform: 'uppercase',
-                    width: i === 0 ? 88 : i === 2 ? 96 : i === 3 ? 92 : undefined,
-                    flex: i === 1 ? 1 : undefined,
+                    width: head.w,
+                    flex: head.w ? undefined : 1,
                   },
                   metrics(9.5, 1.4, 0.1),
                 ]}
               >
-                {headCell}
+                {head.label}
               </Text>
             ))}
           </View>
@@ -591,7 +652,7 @@ function SceneWindow() {
       </View>
     </View>
   );
-}
+});
 
 /* -------------------------------------------------- stacked mobile variant */
 
@@ -600,16 +661,11 @@ function TransformStack() {
 
   return (
     <View
-      onLayout={(e) => registerSection('transform', e.nativeEvent.layout.y)}
+      ref={(node) => registerSection('transform', node)}
       style={{ backgroundColor: color.ink, paddingVertical: 72, paddingHorizontal: 20 }}
     >
       <SceneKicker label="Before" />
-      <Text
-        style={[
-          { fontFamily: font.displayBold, color: color.white, marginBottom: 22 },
-          metrics(30, 1.05, -0.035),
-        ]}
-      >
+      <Text style={[{ fontFamily: font.displayBold, color: color.white, marginBottom: 22 }, metrics(30, 1.05, -0.035)]}>
         Messages. Notes. Spreadsheets. Courier losses.
       </Text>
 
@@ -634,12 +690,7 @@ function TransformStack() {
       <View style={{ width: 1, height: 44, backgroundColor: color.accent, alignSelf: 'center', marginBottom: 24, opacity: 0.7 }} />
 
       <SceneKicker label="After" accent />
-      <Text
-        style={[
-          { fontFamily: font.displayBold, color: color.white, marginBottom: 22 },
-          metrics(30, 1.05, -0.035),
-        ]}
-      >
+      <Text style={[{ fontFamily: font.displayBold, color: color.white, marginBottom: 22 }, metrics(30, 1.05, -0.035)]}>
         One system your whole business runs on.
       </Text>
 
@@ -665,7 +716,7 @@ function TransformStack() {
                 metrics(9, 1.4, 0.12),
               ]}
             >
-              OrderFlow
+              Vendly.lk
             </Text>
           </View>
           <View style={{ padding: 14 }}>

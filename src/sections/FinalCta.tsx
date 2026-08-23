@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { brand } from '@/assets';
 import { Reveal } from '@/components/Reveal';
 import { Button } from '@/components/Button';
@@ -12,10 +13,11 @@ import { useScroll } from '@/scroll/ScrollProvider';
 export function FinalCta() {
   const { f, gutter } = useViewport();
   const { registerSection, scrollToSection } = useScroll();
+  const router = useRouter();
 
   return (
     <View
-      onLayout={(e) => registerSection('get-started', e.nativeEvent.layout.y)}
+      ref={(node) => registerSection('get-started', node)}
       style={{
         backgroundColor: color.ink,
         paddingVertical: f(80, 13, 180),
@@ -63,12 +65,12 @@ export function FinalCta() {
               metrics(f(15.5, 1.3, 19), 1.6),
             ]}
           >
-            Set up your storefront, add your products, and take your next order in OrderFlow — while still selling
+            Set up your storefront, add your products, and take your next order in Vendly.lk — while still selling
             exactly where you sell today.
           </Text>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-            <Button label="Get Started Free" size="lg" arrow onPress={() => scrollToSection('get-started')} />
+            <Button label="Get Started Free" size="lg" arrow onPress={() => router.push('/signup')} />
             <Button label="Explore Vendly" variant="ghostInk" size="lg" onPress={() => scrollToSection('storefront')} />
           </View>
 

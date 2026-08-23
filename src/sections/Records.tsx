@@ -257,7 +257,7 @@ function ProductsPanel() {
         overflow: 'hidden',
       }}
     >
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <ScrollView horizontal showsHorizontalScrollIndicator>
         <View style={{ width: contentWidth }}>
           <View
             style={{

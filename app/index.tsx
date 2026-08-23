@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Animated, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { ScrollProvider, useScroll } from '@/scroll/ScrollProvider';
 import { ViewportProvider } from '@/theme/ViewportProvider';
@@ -37,21 +37,18 @@ export default function Page() {
 }
 
 function PageBody({ scrollRef }: { scrollRef: React.RefObject<ScrollView | null> }) {
-  const { scrollY, viewportHeight } = useScroll();
+  const { publish, viewportHeight } = useScroll();
 
   return (
     <View style={{ flex: 1, backgroundColor: color.paper }}>
-      <Animated.ScrollView
-        ref={scrollRef as any}
+      <ScrollView
+        ref={scrollRef}
         scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator
         onLayout={(e) => {
           viewportHeight.current = e.nativeEvent.layout.height;
         }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false },
-        )}
+        onScroll={publish}
       >
         <Hero />
         <Reality />
@@ -69,7 +66,7 @@ function PageBody({ scrollRef }: { scrollRef: React.RefObject<ScrollView | null>
         <Pricing />
         <FinalCta />
         <SiteFooter />
-      </Animated.ScrollView>
+      </ScrollView>
 
       {/* The nav is a sibling of the scroller rather than `position: fixed`,
           which is the portable equivalent and works on native too. */}

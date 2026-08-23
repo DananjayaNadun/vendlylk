@@ -7,12 +7,14 @@ import { H2, Note, metrics } from '@/components/Type';
 import { categories } from '@/data';
 import { color, font, radius, shadow } from '@/theme/tokens';
 import { useViewport } from '@/theme/responsive';
+import { CategoryPreviewModal } from '@/components/CategoryPreviewModal';
 
 export function Categories() {
   const { f } = useViewport();
   const [active, setActive] = useState(0);
   const category = categories[active];
   const detailPad = f(20, 2.4, 30);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   return (
     <Section id="categories" flushTop>
@@ -43,13 +45,17 @@ export function Categories() {
                     tag={item.tag}
                     img={item.img}
                     active={i === active}
-                    onSelect={() => setActive(i)}
+                    onSelect={() => {
+                      setActive(i);
+                      setPreviewOpen(false);
+                    }}
                   />
                 ))}
               </View>
 
               <View
                 style={{
+                  position: 'relative',
                   backgroundColor: color.paper2,
                   borderWidth: 1,
                   borderColor: color.line,
@@ -58,6 +64,12 @@ export function Categories() {
                   ...shadow.panelSoft,
                 }}
               >
+                <CategoryPreviewModal
+                  category={category}
+                  visible={previewOpen}
+                  onClose={() => setPreviewOpen(false)}
+                />
+
                 <View
                   style={{
                     flexDirection: 'row',
@@ -176,19 +188,21 @@ export function Categories() {
                           Set up my catalogue
                         </Text>
                       </View>
-                      <View
-                        style={{
-                          borderWidth: 1,
-                          borderColor: 'rgba(11,13,18,0.14)',
-                          paddingVertical: 11,
-                          paddingHorizontal: 14,
-                          borderRadius: 10,
-                        }}
-                      >
-                        <Text style={[{ fontFamily: font.bodyMedium, color: color.ink }, metrics(12.5, 1.3)]}>
-                          Preview
-                        </Text>
-                      </View>
+                      <Pressable onPress={() => setPreviewOpen(true)} accessibilityRole="button">
+                        <View
+                          style={{
+                            borderWidth: 1,
+                            borderColor: 'rgba(11,13,18,0.14)',
+                            paddingVertical: 11,
+                            paddingHorizontal: 14,
+                            borderRadius: 10,
+                          }}
+                        >
+                          <Text style={[{ fontFamily: font.bodyMedium, color: color.ink }, metrics(12.5, 1.3)]}>
+                            Preview
+                          </Text>
+                        </View>
+                      </Pressable>
                     </View>
                   </View>
                 </AutoGrid>

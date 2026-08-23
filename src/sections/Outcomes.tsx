@@ -54,7 +54,19 @@ export function Outcomes() {
 
                 <Text
                   style={[
-                    { fontFamily: font.body, color: color.textMuted, maxWidth: stack ? undefined : 380 },
+                    {
+                      fontFamily: font.body,
+                      color: color.textMuted,
+                      /* flexBasis (not maxWidth) makes this a fixed-width column:
+                         with no flex-grow, a flex item's box is its own content
+                         width, which differs per row and left the title (flex:1)
+                         swallowing a different amount of space each time — every
+                         row's description started at a different x. flexBasis
+                         fixes the box to 380px regardless of content, so the
+                         column lines up down every row; flexShrink still lets it
+                         narrow if the row itself is too tight. */
+                      ...(stack ? null : { flexBasis: 380, flexGrow: 0, flexShrink: 1 }),
+                    },
                     metrics(14, 1.5),
                   ]}
                 >

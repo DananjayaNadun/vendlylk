@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { useRouter } from 'expo-router';
+import { HeroVideo } from '@/components/HeroVideo';
 import { brand, icons, media, products } from '@/assets';
 import { Enter } from '@/components/Enter';
 import { Button } from '@/components/Button';
@@ -15,51 +16,19 @@ import { useReducedMotion } from '@/theme/useReducedMotion';
 export function Hero() {
   const { width, height, gutter, isMobile, f } = useViewport();
   const { registerSection, scrollToSection } = useScroll();
+  const router = useRouter();
   const reduced = useReducedMotion();
-
-  const player = useVideoPlayer(media.heroLoop, (p) => {
-    p.loop = true;
-    p.muted = true;
-    if (!reduced) p.play();
-  });
-
-  /* Ken Burns: scale 1.04 -> 1.16 over 34s, alternating. */
-  const zoom = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    if (reduced) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(zoom, { toValue: 1, duration: 34000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(zoom, { toValue: 0, duration: 34000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [reduced, zoom]);
 
   const minHeight = Math.min(1000, Math.max(660, height));
 
   return (
     <View
-      onLayout={(e) => registerSection('top', e.nativeEvent.layout.y)}
+      ref={(node) => registerSection('top', node)}
       style={{ minHeight, backgroundColor: color.ink, overflow: 'hidden' }}
     >
-      {/* Background video */}
+      {/* Background video — full-bleed, muted, looping */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Animated.View
-          style={[
-            StyleSheet.absoluteFill,
-            { transform: [{ scale: zoom.interpolate({ inputRange: [0, 1], outputRange: [1.04, 1.16] }) }] },
-          ]}
-        >
-          <VideoView
-            player={player}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            nativeControls={false}
-            pointerEvents="none"
-          />
-        </Animated.View>
+        <HeroVideo source={media.heroLoop} paused={reduced} />
       </View>
 
       {/* Vertical scrim */}
@@ -165,14 +134,14 @@ export function Hero() {
                   metrics(f(16, 1.35, 19), 1.55),
                 ]}
               >
-                Keep selling in the chats your customers already use. OrderFlow organises everything behind them
+                Keep selling in the chats your customers already use. Vendly.lk organises everything behind them
                 — orders, customers, products, inventory, payments, courier and reports — in one place.
               </Text>
             </Enter>
 
             <Enter delay={420}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-                <Button label="Get Started Free" arrow onPress={() => scrollToSection('get-started')} />
+                <Button label="Get Started Free" arrow onPress={() => router.push('/signup')} />
                 <Button label="See How It Works" variant="ghostInk" play onPress={() => scrollToSection('how-it-works')} />
               </View>
             </Enter>

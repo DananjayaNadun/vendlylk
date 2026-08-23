@@ -111,7 +111,7 @@ export function Orders() {
             </View>
 
             {/* Table — scrolls horizontally rather than crushing the columns */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <ScrollView horizontal showsHorizontalScrollIndicator>
               <View style={{ width: contentWidth }}>
                 <View
                   style={{

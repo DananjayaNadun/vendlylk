@@ -2,10 +2,12 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
 } from 'react';
-import { Animated, ScrollView } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
+import { primeViewportTop, readViewportTop } from './measure';
 
 type SectionId =
   | 'top'
@@ -25,13 +27,18 @@ type SectionId =
   | 'get-started'
   | 'resources';
 
+type Listener = (y: number) => void;
+
 type ScrollContextValue = {
-  /** Live scroll offset of the page ScrollView. */
-  scrollY: Animated.Value;
+  /** Latest scroll offset. Read from a listener, never during render. */
+  offset: React.RefObject<number>;
   /** Height of the scroll viewport — the RN stand-in for `100vh`. */
   viewportHeight: React.RefObject<number>;
-  /** Sections report their content offset here so the nav can jump to them. */
-  registerSection: (id: SectionId, y: number) => void;
+  subscribe: (listener: Listener) => () => void;
+  /** Called by the page ScrollView on every scroll event. */
+  publish: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  /** Sections hand over their node so their position can be read when needed. */
+  registerSection: (id: SectionId, node: unknown) => void;
   scrollToSection: (id: SectionId) => void;
   scrollToTop: () => void;
 };
@@ -46,6 +53,17 @@ export function useScroll(): ScrollContextValue {
 
 export type { SectionId };
 
+/**
+ * Scroll position is published straight from the ScrollView's `onScroll` to a
+ * plain subscriber list.
+ *
+ * An earlier version routed this through `Animated.event` and derived every
+ * scroll-linked style with `Animated.interpolate`. That added a layer between
+ * the scroll event and the styles that was hard to reason about and did not
+ * drive reliably on react-native-web. The prototype recomputed its scene
+ * arithmetic on every scroll instead, so this does the same: listeners get the
+ * raw offset and compute whatever they need from it.
+ */
 export function ScrollProvider({
   children,
   scrollRef,
@@ -53,20 +71,61 @@ export function ScrollProvider({
   children: React.ReactNode;
   scrollRef: React.RefObject<ScrollView | null>;
 }) {
-  const scrollY = useRef(new Animated.Value(0)).current;
+  const offset = useRef(0);
   const viewportHeight = useRef(0);
-  const sections = useRef<Partial<Record<SectionId, number>>>({});
+  const sections = useRef<Partial<Record<SectionId, unknown>>>({});
+  const listeners = useRef(new Set<Listener>());
 
-  const registerSection = useCallback((id: SectionId, y: number) => {
-    sections.current[id] = y;
+  /**
+   * `offset` updates synchronously on every raw scroll event — cheap, it's a
+   * ref write. Notifying listeners is coalesced to one pass per animation
+   * frame instead: there are ~25 of them (reveals, section registries, the
+   * nav backdrop, the pinned scene), several doing a synchronous
+   * `getBoundingClientRect()`. Raw scroll events can fire far more often than
+   * once per frame — running every listener on every one of them is layout
+   * thrashing, and it is what produced visible stutter and the nav backdrop
+   * lagging behind the actual scroll position. rAF is a no-op while the tab
+   * is hidden or backgrounded, which is correct there — nothing is being
+   * painted, so nothing needs to update.
+   */
+  const frame = useRef<number | null>(null);
+
+  const publish = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    offset.current = event.nativeEvent.contentOffset.y;
+    const layoutHeight = event.nativeEvent.layoutMeasurement?.height;
+    if (layoutHeight) viewportHeight.current = layoutHeight;
+    if (frame.current != null) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      listeners.current.forEach((listener) => listener(offset.current));
+    });
+  }, []);
+
+  const subscribe = useCallback((listener: Listener) => {
+    listeners.current.add(listener);
+    /* Fire once so a late subscriber matches the current position. */
+    listener(offset.current);
+    return () => {
+      listeners.current.delete(listener);
+    };
+  }, []);
+
+  const registerSection = useCallback((id: SectionId, node: unknown) => {
+    if (!node) return;
+    sections.current[id] = node;
+    primeViewportTop(node);
   }, []);
 
   const scrollToSection = useCallback(
     (id: SectionId) => {
-      const y = sections.current[id];
-      if (y == null) return;
-      /* Offset by the fixed nav so section headings are not hidden under it. */
-      scrollRef.current?.scrollTo({ y: Math.max(0, y - 72), animated: true });
+      const node = sections.current[id];
+      if (!node) return;
+      /* Measured at click time rather than remembered from layout, so the jump
+         is correct even after content above the section has changed height. */
+      const top = readViewportTop(node);
+      if (top == null) return;
+      /* Offset by the fixed nav so section headings clear it. */
+      scrollRef.current?.scrollTo({ y: Math.max(0, offset.current + top - 72), animated: true });
     },
     [scrollRef],
   );
@@ -75,40 +134,34 @@ export function ScrollProvider({
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, [scrollRef]);
 
+  useEffect(
+    () => () => {
+      if (frame.current != null) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
+
   const value = useMemo(
-    () => ({ scrollY, viewportHeight, registerSection, scrollToSection, scrollToTop }),
-    [scrollY, registerSection, scrollToSection, scrollToTop],
+    () => ({
+      offset,
+      viewportHeight,
+      subscribe,
+      publish,
+      registerSection,
+      scrollToSection,
+      scrollToTop,
+    }),
+    [subscribe, publish, registerSection, scrollToSection, scrollToTop],
   );
 
   return <ScrollContext.Provider value={value}>{children}</ScrollContext.Provider>;
 }
 
-/**
- * Subscribe to the numeric scroll offset, coalesced to one callback per frame.
- * Used by the pinned transformation scene, which needs a real number rather
- * than an Animated node because its maths is not a linear interpolation.
- */
-export function useScrollListener(handler: (y: number) => void) {
-  const { scrollY } = useScroll();
-  const frame = useRef<number | null>(null);
-  const latest = useRef(0);
-  const cb = useRef(handler);
-  cb.current = handler;
+/** Subscribe to the scroll offset. Fires once on mount, then on every scroll. */
+export function useScrollListener(handler: Listener) {
+  const { subscribe } = useScroll();
+  const callback = useRef(handler);
+  callback.current = handler;
 
-  React.useEffect(() => {
-    const id = scrollY.addListener(({ value }) => {
-      latest.current = value;
-      if (frame.current != null) return;
-      frame.current = requestAnimationFrame(() => {
-        frame.current = null;
-        cb.current(latest.current);
-      });
-    });
-    /* Fire once so first paint reflects the current position. */
-    cb.current(latest.current);
-    return () => {
-      scrollY.removeListener(id);
-      if (frame.current != null) cancelAnimationFrame(frame.current);
-    };
-  }, [scrollY]);
+  useEffect(() => subscribe((y) => callback.current(y)), [subscribe]);
 }

@@ -16,6 +16,12 @@ import { IBMPlexSans_600SemiBold } from '@expo-google-fonts/ibm-plex-sans/600Sem
 import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono/400Regular';
 import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono/500Medium';
 import { color } from '@/theme/tokens';
+import { injectGlobalScrollbar } from '@/theme/globalScrollbar';
+
+/* Module scope, not inside the component: runs exactly once at startup,
+   before the first paint, on both the loading spinner below and the real
+   page — matching how fonts are requested above. */
+injectGlobalScrollbar();
 
 export default function RootLayout() {
   const [loaded] = useFonts({

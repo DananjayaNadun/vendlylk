@@ -98,13 +98,11 @@ export function Section({
   const { gutter, sectionY, width } = useViewport();
   const { registerSection } = useScroll();
 
-  const onLayout = (event: LayoutChangeEvent) => {
-    if (id) registerSection(id, event.nativeEvent.layout.y);
-  };
-
   return (
     <View
-      onLayout={onLayout}
+      ref={(node) => {
+        if (id) registerSection(id, node);
+      }}
       style={[
         {
           backgroundColor: tone === 'ink' ? color.ink : color.paper,

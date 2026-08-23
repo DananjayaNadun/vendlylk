@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { brand, products } from '@/assets';
 import { metrics } from '@/components/Type';
 import { color, font, layout, radius, shadow } from '@/theme/tokens';
@@ -29,6 +30,7 @@ const SOLUTION_LINKS = [
 export function SiteNav() {
   const { gutter, isMobile } = useViewport();
   const { scrollToSection, scrollToTop } = useScroll();
+  const router = useRouter();
 
   const [menu, setMenu] = useState<MenuKey | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -101,11 +103,11 @@ export function SiteNav() {
             }}
           />
 
+          {/* Full-bleed rather than capped to the 1320px container, so the
+              logo sits against the left edge and the CTAs against the right. */}
           <View
             style={{
               width: '100%',
-              maxWidth: layout.container,
-              alignSelf: 'center',
               paddingHorizontal: gutter,
               height: layout.navHeight,
               flexDirection: 'row',
@@ -114,7 +116,7 @@ export function SiteNav() {
               gap: 24,
             }}
           >
-            <Pressable onPress={scrollToTop} accessibilityRole="link" accessibilityLabel="Vendly OrderFlow — home">
+            <Pressable onPress={scrollToTop} accessibilityRole="link" accessibilityLabel="Vendly.lk — home">
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Image source={brand.light} style={{ width: 26, height: 26 }} resizeMode="contain" />
                 <Text style={[{ fontFamily: font.displayBold, color: color.white }, metrics(19, 1.2, -0.03)]}>
@@ -127,7 +129,7 @@ export function SiteNav() {
                       metrics(10, 1.4, 0.14),
                     ]}
                   >
-                    OrderFlow
+                    LK
                   </Text>
                 </View>
               </View>
@@ -154,8 +156,8 @@ export function SiteNav() {
                 </View>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <NavLink label="Sign In" onPress={() => {}} plain />
-                  <Pressable onPress={() => go('get-started')} accessibilityRole="button">
+                  <NavLink label="Sign In" onPress={() => router.push('/login')} plain />
+                  <Pressable onPress={() => router.push('/signup')} accessibilityRole="button">
                     <View
                       style={{
                         backgroundColor: color.accent,
@@ -174,7 +176,7 @@ export function SiteNav() {
               </>
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Pressable onPress={() => go('get-started')} accessibilityRole="button">
+                <Pressable onPress={() => router.push('/signup')} accessibilityRole="button">
                   <View style={{ backgroundColor: color.accent, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 }}>
                     <Text style={[{ fontFamily: font.bodySemi, color: color.white }, metrics(14, 1.2)]}>
                       Get Started
@@ -226,7 +228,20 @@ export function SiteNav() {
         </View>
       </View>
 
-      {sheetOpen && isMobile ? <MobileSheet onClose={() => setSheetOpen(false)} onGo={go} /> : null}
+      {sheetOpen && isMobile ? (
+        <MobileSheet
+          onClose={() => setSheetOpen(false)}
+          onGo={go}
+          onLogin={() => {
+            setSheetOpen(false);
+            router.push('/login');
+          }}
+          onSignup={() => {
+            setSheetOpen(false);
+            router.push('/signup');
+          }}
+        />
+      ) : null}
     </>
   );
 }
@@ -445,7 +460,17 @@ function MegaCat({ label, img, onPress }: { label: string; img: any; onPress: ()
 
 /* ------------------------------------------------------------ mobile sheet */
 
-function MobileSheet({ onClose, onGo }: { onClose: () => void; onGo: (id: SectionId) => void }) {
+function MobileSheet({
+  onClose,
+  onGo,
+  onLogin,
+  onSignup,
+}: {
+  onClose: () => void;
+  onGo: (id: SectionId) => void;
+  onLogin: () => void;
+  onSignup: () => void;
+}) {
   const primary: { label: string; to: SectionId }[] = [
     { label: 'Orders', to: 'orders' },
     { label: 'Storefront', to: 'storefront' },
@@ -539,7 +564,7 @@ function MobileSheet({ onClose, onGo }: { onClose: () => void; onGo: (id: Sectio
           {secondary.map((item, i) => (
             <Pressable
               key={item.label}
-              onPress={() => (item.to ? onGo(item.to) : onClose())}
+              onPress={() => (item.to ? onGo(item.to) : onLogin())}
               accessibilityRole="link"
             >
               <View
@@ -559,7 +584,7 @@ function MobileSheet({ onClose, onGo }: { onClose: () => void; onGo: (id: Sectio
       </ScrollView>
 
       <View style={{ padding: 20, paddingTop: 16, paddingBottom: 26, borderTopWidth: 1, borderTopColor: color.white08 }}>
-        <Pressable onPress={() => onGo('get-started')} accessibilityRole="button">
+        <Pressable onPress={onSignup} accessibilityRole="button">
           <View style={{ backgroundColor: color.accent, borderRadius: radius.control, padding: 16, alignItems: 'center' }}>
             <Text style={[{ fontFamily: font.bodySemi, color: color.white }, metrics(16, 1.2)]}>
               Get Started Free

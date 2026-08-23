@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { AutoGrid, Container, RuledTop, Section, SplitHead } from '@/components/Layout';
 import { Reveal } from '@/components/Reveal';
 import { Button, LinkArrow } from '@/components/Button';
@@ -8,11 +9,10 @@ import { H2Sub, Note, metrics } from '@/components/Type';
 import { growthFeatures, starterFeatures } from '@/data';
 import { color, font, radius } from '@/theme/tokens';
 import { useViewport } from '@/theme/responsive';
-import { useScroll } from '@/scroll/ScrollProvider';
 
 export function Pricing() {
   const { f } = useViewport();
-  const { scrollToSection } = useScroll();
+  const router = useRouter();
 
   return (
     <Section id="pricing" flushTop>
@@ -39,7 +39,7 @@ export function Pricing() {
                 tagTone="free"
                 body="Everything you need to sell properly and keep your orders in one place."
                 features={starterFeatures}
-                cta={<Button label="Get Started Free" variant="quiet" block onPress={() => scrollToSection('get-started')} />}
+                cta={<Button label="Get Started Free" variant="quiet" block onPress={() => router.push('/signup')} />}
               />
 
               <Plan
@@ -49,7 +49,7 @@ export function Pricing() {
                 tagTone="soon"
                 body="Everything in Starter, plus the operational side of the business."
                 features={growthFeatures}
-                cta={<Button label="Start free, upgrade later" block onPress={() => scrollToSection('get-started')} />}
+                cta={<Button label="Start free, upgrade later" block onPress={() => router.push('/signup')} />}
               />
 
               <HonestNote />
