@@ -16,7 +16,10 @@
     "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
     "@expo-google-fonts/schibsted-grotesk": "^0.4.2",
     "@expo/metro-runtime": "~57.0.12",
+<<<<<<< HEAD
     "@react-three/fiber": "^9.7.0",
+=======
+>>>>>>> c1decb5f08ffdabb7df20508d93878b536a73e30
     "expo": "~57.0.15",
     "expo-asset": "~57.0.13",
     "expo-blur": "~57.0.2",
@@ -33,12 +36,19 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
+<<<<<<< HEAD
     "react-native-web": "^0.21.2",
     "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
     "@types/three": "^0.185.4",
+=======
+    "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+>>>>>>> c1decb5f08ffdabb7df20508d93878b536a73e30
     "typescript": "~6.0.3"
   }
 }

@@ -53,6 +53,7 @@ export function XIcon({ size = 19, fill = '#0B0D12' }: { size?: number; fill?: s
     </Svg>
   );
 }
+<<<<<<< HEAD
 
 /** Google's official four-colour "G" mark. */
 export function GoogleIcon({ size = 20 }: { size?: number }) {
@@ -90,3 +91,5 @@ export function FacebookIcon({ size = 20 }: { size?: number }) {
     </Svg>
   );
 }
+=======
+>>>>>>> c1decb5f08ffdabb7df20508d93878b536a73e30
