@@ -113,6 +113,14 @@ export function RayBurst({ opacity = 1 }: { opacity?: number }) {
     };
 
     const loop = () => {
+      /* Self-heal: the element can commit at zero size, and if the observer
+         never reports (unsupported, or a host that stubs it out) the canvas
+         would stay blank forever. Re-measuring while unsized is a couple of
+         reads per frame and stops as soon as it succeeds. */
+      if (!width && !measure()) {
+        frame = window.requestAnimationFrame(loop);
+        return;
+      }
       if (onScreen) draw(1 / 60);
       frame = window.requestAnimationFrame(loop);
     };

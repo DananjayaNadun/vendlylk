@@ -2,17 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-<<<<<<< HEAD
       "name": "vendly-dist",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "4174", "-d", "dist"],
       "port": 4174
-=======
-      "name": "expo-web",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start", "--web", "--port", "8081"],
-      "port": 8081
->>>>>>> c1decb5f08ffdabb7df20508d93878b536a73e30
     }
   ]
 }
