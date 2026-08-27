@@ -215,7 +215,7 @@ function OrbitScene() {
      ~260px there is nothing left to read, so it is dropped rather than
      squeezed — the section stands on its own without it. */
   const boardWidth = BOARD_WIDTH * scale;
-  const mapWidth = Math.min(380, contentWidth - boardWidth - 32);
+  const mapWidth = Math.min(480, contentWidth - boardWidth - 32);
   /* Near square on purpose. The island turns about its vertical axis, so the
      width it needs (its long diagonal) and the height it needs (that diagonal
      foreshortened, plus the arcs) come out close to equal — a tall box would

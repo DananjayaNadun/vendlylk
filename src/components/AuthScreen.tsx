@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Pressable, Text, TextInput, View } from 'react-native';
+import { Animated, Easing, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { brand } from '@/assets';
 import { Button } from '@/components/Button';
 import { AppleIcon, FacebookIcon, GoogleIcon } from '@/components/icons';
+import { DAY_TIME_THEMES, DayTime, DayTimeSwitcher, DayTimeTheme } from '@/components/DayTimeSwitcher';
 import { metrics } from '@/components/Type';
 import { color, font, radius, shadow } from '@/theme/tokens';
 import { useViewport } from '@/theme/responsive';
@@ -179,41 +180,69 @@ function SocialButton({ children }: { children: React.ReactNode }) {
 }
 
 /** The gradient "launch" side — rocket, scattered stars, a couple of
-    drifting asteroids. Evokes the handoff's illustration without tracing
-    its hundred-odd generated vector fragments one for one. */
+    drifting asteroids, over a time-of-day gradient the viewer can switch.
+    Evokes the handoff's illustration without tracing its hundred-odd
+    generated vector fragments one for one. */
 function LaunchPanel() {
+  const [theme, setTheme] = useState<DayTime>('night');
+  const [fadeFrom, setFadeFrom] = useState<DayTimeTheme | null>(null);
+  const fade = useRef(new Animated.Value(0)).current;
+  const active = DAY_TIME_THEMES.find((t) => t.id === theme) ?? DAY_TIME_THEMES[DAY_TIME_THEMES.length - 1];
+
+  /* The outgoing gradient is kept mounted on top, fading out, rather than
+     interpolating colour stops directly — expo-linear-gradient cannot
+     animate its `colors` prop, and cross-fading two layers gives the same
+     result while staying declarative. */
+  const changeTheme = (next: DayTime) => {
+    if (next === theme) return;
+    setFadeFrom(active);
+    fade.setValue(1);
+    setTheme(next);
+    Animated.timing(fade, {
+      toValue: 0,
+      duration: 450,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) setFadeFrom(null);
+    });
+  };
+
   return (
-    <LinearGradient
-      colors={['#013D62', '#0066A5', '#0082D2', '#009DFF']}
-      locations={[0, 0.36, 0.56, 1]}
-      style={{ flex: 1 }}
-    >
-      <View style={{ flex: 1 }}>
-        {STARS.map((s, i) => (
-          <Text
-            key={i}
-            style={{
-              position: 'absolute',
-              left: `${s.x}%`,
-              top: `${s.y}%`,
-              fontSize: s.size,
-              color: '#FFFFFF',
-              opacity: s.opacity,
-            }}
-          >
-            ✦
-          </Text>
-        ))}
+    <View style={{ flex: 1 }}>
+      <LinearGradient colors={active.gradient} locations={active.locations} style={StyleSheet.absoluteFill} />
+      {fadeFrom ? (
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: fade }]} pointerEvents="none">
+          <LinearGradient colors={fadeFrom.gradient} locations={fadeFrom.locations} style={{ flex: 1 }} />
+        </Animated.View>
+      ) : null}
 
-        <Asteroid x={16} y={22} size={22} rotate="-20deg" />
-        <Asteroid x={80} y={16} size={16} rotate="18deg" />
-        <Asteroid x={12} y={70} size={14} rotate="8deg" />
+      {STARS.map((s, i) => (
+        <Text
+          key={i}
+          style={{
+            position: 'absolute',
+            left: `${s.x}%`,
+            top: `${s.y}%`,
+            fontSize: s.size,
+            color: active.fleck,
+            opacity: s.opacity,
+          }}
+        >
+          ✦
+        </Text>
+      ))}
 
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <RocketIcon size={170} />
-        </View>
+      <Asteroid x={16} y={22} size={22} rotate="-20deg" />
+      <Asteroid x={80} y={16} size={16} rotate="18deg" />
+      <Asteroid x={12} y={70} size={14} rotate="8deg" />
+
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <RocketIcon size={170} />
       </View>
-    </LinearGradient>
+
+      <DayTimeSwitcher value={theme} onChange={changeTheme} />
+    </View>
   );
 }
 

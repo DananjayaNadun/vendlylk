@@ -11,6 +11,18 @@ import {
   SRI_LANKA_OUTLINE,
 } from './sriLankaData';
 
+/** The real carriers this site already names elsewhere (see Coverage.tsx). */
+const COURIERS = ['Koombiyo', 'PromptXpress', 'Domex', 'Aramex', 'DHL', 'SL Post'] as const;
+
+/** A small, stable subset per district — not random each render, and not
+    the same three couriers for every single place on the island. */
+function couriersFor(name: string): string[] {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  const start = hash % COURIERS.length;
+  return [0, 1, 2].map((i) => COURIERS[(start + i) % COURIERS.length]);
+}
+
 /**
  * Sri Lanka as a lit, rotating relief.
  *
@@ -218,23 +230,28 @@ function Marker({
   district,
   glow,
   hovered,
+  selected,
   onHover,
+  onSelect,
 }: {
   district: District;
   glow: THREE.Texture;
   hovered: boolean;
+  selected: boolean;
   onHover: (d: District | null) => void;
+  onSelect: (d: District) => void;
 }) {
   const position = useMemo(() => districtPoint(district), [district]);
   const halo = useRef<THREE.Sprite>(null);
   const radius = 0.055 + district.weight * 0.05;
+  const active = hovered || selected;
 
   useFrame(({ clock }) => {
     if (!halo.current) return;
     // Each marker breathes on its own phase, so the island does not blink in unison.
     const t = clock.elapsedTime * 1.6 + district.at[0];
     const base = 0.5 + district.weight * 0.45;
-    halo.current.scale.setScalar(base * (1 + Math.sin(t) * 0.12) * (hovered ? 1.45 : 1));
+    halo.current.scale.setScalar(base * (1 + Math.sin(t) * 0.12) * (selected ? 1.75 : active ? 1.45 : 1));
   });
 
   return (
@@ -255,12 +272,16 @@ function Marker({
           onHover(district);
         }}
         onPointerOut={() => onHover(null)}
+        onClick={event => {
+          event.stopPropagation();
+          onSelect(district);
+        }}
       >
         <sphereGeometry args={[radius, 20, 20]} />
         <meshStandardMaterial
           color={MARKER}
           emissive={MARKER}
-          emissiveIntensity={hovered ? 2.6 : 1.4}
+          emissiveIntensity={selected ? 3.2 : active ? 2.6 : 1.4}
           roughness={0.3}
         />
       </mesh>
@@ -308,7 +329,7 @@ function FitCamera() {
     const cam = camera as THREE.PerspectiveCamera;
     const vFov = (cam.fov * Math.PI) / 180;
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (size.width / size.height));
-    const distance = (FIT_RADIUS * 1.06) / Math.sin(Math.min(vFov, hFov) / 2);
+    const distance = (FIT_RADIUS * 0.92) / Math.sin(Math.min(vFov, hFov) / 2);
 
     // Direction is whatever the viewer has orbited to; only distance changes.
     cam.position.setLength(distance);
@@ -356,13 +377,17 @@ function Controls({ autoRotate }: { autoRotate: boolean }) {
 function Scene({
   reducedMotion,
   onHover,
+  onSelect,
   tooltipNode,
   hovered,
+  selected,
 }: {
   reducedMotion: boolean;
   onHover: (d: District | null) => void;
+  onSelect: (d: District) => void;
   tooltipNode: React.RefObject<HTMLDivElement | null>;
   hovered: District | null;
+  selected: District | null;
 }) {
   const glow = useGlowTexture();
   const { gl } = useThree();
@@ -400,11 +425,13 @@ function Scene({
           district={district}
           glow={glow}
           hovered={hovered ? hovered.name === district.name : false}
+          selected={selected ? selected.name === district.name : false}
           onHover={onHover}
+          onSelect={onSelect}
         />
       ))}
 
-      <TooltipAnchor district={hovered} node={tooltipNode} />
+      <TooltipAnchor district={selected ?? hovered} node={tooltipNode} />
       {/* Before Controls, so OrbitControls initialises at the fitted distance. */}
       <FitCamera />
       <Controls autoRotate={!reducedMotion} />
@@ -412,35 +439,70 @@ function Scene({
   );
 }
 
+/** Fixed positions around the frame, well outside the island itself. */
+const BADGE_SPOTS: readonly { top: string; left?: string; right?: string }[] = [
+  { top: '6%', left: '2%' },
+  { top: '20%', right: '4%' },
+  { top: '46%', left: '0%' },
+  { top: '58%', right: '0%' },
+  { top: '80%', left: '10%' },
+  { top: '88%', right: '12%' },
+];
+
 export type SriLankaMapProps = { width: number; height: number };
 
 export function SriLankaMap({ width, height }: SriLankaMapProps) {
   const reducedMotion = useReducedMotion();
   const [hovered, setHovered] = useState<District | null>(null);
+  const [selected, setSelected] = useState<District | null>(null);
   const tooltipNode = useRef<HTMLDivElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const active = selected ?? hovered;
+
+  const onSelect = (district: District) =>
+    setSelected(prev => (prev && prev.name === district.name ? null : district));
+
+  /* A click anywhere outside the map clears a selected district — the same
+     click-outside pattern used by the operating-system section's own chip
+     popovers, so the two behave the same way on one page. */
+  useEffect(() => {
+    if (!selected) return;
+    const onDown = (event: MouseEvent) => {
+      const node = wrapRef.current;
+      if (node && event.target instanceof Node && node.contains(event.target)) return;
+      setSelected(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [selected]);
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        width,
-        height,
-      }}
-    >
+    <div ref={wrapRef} style={{ position: 'relative', width, height }}>
+      {/* Carrier names floating around the relief — decorative, so they're
+          faded well back rather than competing with the island or the
+          tooltip for attention. */}
+      {COURIERS.map((name, i) => (
+        <span key={name} style={{ ...badgeStyle, ...BADGE_SPOTS[i % BADGE_SPOTS.length] }}>
+          {name}
+        </span>
+      ))}
+
       <Canvas
         // "percentage" rather than the default: three deprecated PCFSoftShadowMap,
         // and R3F's bare `shadows` still asks for it.
         shadows="percentage"
         dpr={[1, 2]}
-        camera={{ position: [0, 7.5, 8.5], fov: 38 }}
+        camera={{ position: [0, 10, 5.5], fov: 38 }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
         <Scene
           reducedMotion={reducedMotion}
           onHover={setHovered}
+          onSelect={onSelect}
           tooltipNode={tooltipNode}
           hovered={hovered}
+          selected={selected}
         />
       </Canvas>
 
@@ -448,11 +510,27 @@ export function SriLankaMap({ width, height }: SriLankaMapProps) {
        *  reader can reach, rather than something painted into the scene. */}
       <div
         ref={tooltipNode}
-        style={{ ...tooltipStyle, opacity: hovered ? 1 : 0 }}
+        style={{
+          ...tooltipStyle,
+          opacity: active ? 1 : 0,
+          pointerEvents: selected ? 'auto' : 'none',
+          whiteSpace: selected ? 'normal' : 'nowrap',
+        }}
         aria-live="polite"
       >
-        <span style={tooltipNameStyle}>{hovered ? hovered.name : ''}</span>
-        <span style={tooltipNoteStyle}>One system, island-wide</span>
+        <span style={tooltipNameStyle}>{active ? active.name : ''}</span>
+        {selected ? (
+          <>
+            <span style={tooltipNoteStyle}>Couriers serving this district</span>
+            <div style={courierRowStyle}>
+              {couriersFor(selected.name).map(name => (
+                <span key={name} style={courierPillStyle}>{name}</span>
+              ))}
+            </div>
+          </>
+        ) : (
+          <span style={tooltipNoteStyle}>One system, island-wide · tap for couriers</span>
+        )}
       </div>
     </div>
   );
@@ -488,4 +566,36 @@ const tooltipNoteStyle: React.CSSProperties = {
   letterSpacing: 1.2,
   textTransform: 'uppercase',
   color: 'rgba(255,255,255,0.5)',
+};
+
+/** A courier name floating near the map's edge — 70% opaque per the brief,
+    so the relief itself still reads as the main subject. */
+const badgeStyle: React.CSSProperties = {
+  position: 'absolute',
+  fontFamily: 'IBMPlexMono_500Medium, ui-monospace, monospace',
+  fontSize: 10.5,
+  letterSpacing: 0.6,
+  textTransform: 'uppercase',
+  color: 'rgba(157,178,255,0.7)',
+  whiteSpace: 'nowrap',
+  pointerEvents: 'none',
+  userSelect: 'none',
+};
+
+const courierRowStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 5,
+  marginTop: 6,
+  maxWidth: 170,
+};
+
+const courierPillStyle: React.CSSProperties = {
+  fontFamily: 'IBMPlexSans_500Medium, system-ui, sans-serif',
+  fontSize: 10.5,
+  padding: '3px 8px',
+  borderRadius: 999,
+  background: 'rgba(110,133,255,0.16)',
+  border: '1px solid rgba(110,133,255,0.4)',
+  color: '#FFFFFF',
 };

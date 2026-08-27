@@ -16,10 +16,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "lk.vendly.orderflow"
+      "bundleIdentifier": "lk.vendly.app"
     },
     "android": {
-      "package": "lk.vendly.orderflow",
+      "package": "lk.vendly.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/vendly-mark-light.png",
         "backgroundColor": "#0B0D12"
