@@ -17,6 +17,7 @@ import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono/400Regu
 import { IBMPlexMono_500Medium } from '@expo-google-fonts/ibm-plex-mono/500Medium';
 import { color } from '@/theme/tokens';
 import { injectGlobalScrollbar } from '@/theme/globalScrollbar';
+import { ViewportProvider } from '@/theme/ViewportProvider';
 
 /* Module scope, not inside the component: runs exactly once at startup,
    before the first paint, on both the loading spinner below and the real
@@ -45,5 +46,9 @@ export default function RootLayout() {
     );
   }
 
-  return <Slot />;
+  return (
+    <ViewportProvider>
+      <Slot />
+    </ViewportProvider>
+  );
 }

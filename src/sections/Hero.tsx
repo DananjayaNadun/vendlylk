@@ -1,12 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
 import { HeroVideo } from '@/components/HeroVideo';
-import { RayBurst } from '@/components/RayBurst';
 import { brand, icons, media, products } from '@/assets';
 import { Enter } from '@/components/Enter';
 import { Button } from '@/components/Button';
+import { DownloadButton } from '@/components/DownloadButton';
 import { WhatsAppIcon } from '@/components/icons';
 import { metrics, H1 } from '@/components/Type';
 import { color, font, layout, radius, shadow } from '@/theme/tokens';
@@ -17,7 +16,6 @@ import { useReducedMotion } from '@/theme/useReducedMotion';
 export function Hero() {
   const { width, height, gutter, isMobile, f } = useViewport();
   const { registerSection, scrollToSection } = useScroll();
-  const router = useRouter();
   const reduced = useReducedMotion();
 
   const minHeight = Math.min(1000, Math.max(660, height));
@@ -55,13 +53,6 @@ export function Hero() {
         start={{ x: 0.08, y: 0.55 }}
         end={{ x: 0.9, y: 0.55 }}
       />
-
-      {/* Rays fanning up from the bottom edge, behind the call to action.
-          Sits above the scrims so it is not dimmed by them, but under the
-          content and non-interactive, so it never intercepts a tap. */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <RayBurst opacity={0.55} />
-      </View>
 
       {/* Content */}
       <View
@@ -149,7 +140,7 @@ export function Hero() {
 
             <Enter delay={420}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-                <Button label="Get Started Free" arrow onPress={() => router.push('/signup')} />
+                <DownloadButton />
                 <Button label="See How It Works" variant="ghostInk" play onPress={() => scrollToSection('how-it-works')} />
               </View>
             </Enter>
