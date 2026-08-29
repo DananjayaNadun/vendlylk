@@ -34,7 +34,7 @@ export default function Page() {
 }
 
 function PageBody({ scrollRef }: { scrollRef: React.RefObject<ScrollView | null> }) {
-  const { publish, viewportHeight } = useScroll();
+  const { publish, notify, viewportHeight } = useScroll();
 
   return (
     <View style={{ flex: 1, backgroundColor: color.paper }}>
@@ -44,6 +44,10 @@ function PageBody({ scrollRef }: { scrollRef: React.RefObject<ScrollView | null>
         showsVerticalScrollIndicator
         onLayout={(e) => {
           viewportHeight.current = e.nativeEvent.layout.height;
+          /* Reveals mount before this fires and bail out with no viewport
+             height to check against — re-run them now that one exists,
+             rather than leaving sections blank until the user scrolls. */
+          notify();
         }}
         onScroll={publish}
       >

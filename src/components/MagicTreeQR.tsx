@@ -8,7 +8,15 @@
  * concept of the `.web` platform extension, so a bare import resolves to
  * whichever file `tsc` finds first.
  */
-export type MagicTreeQRProps = { value: string; width: number; height: number };
+export type MagicTreeQRProps = {
+  value: string;
+  width: number;
+  height: number;
+  leafColor?: string;
+  hint?: boolean;
+  hintColor?: string;
+  onToggle?: (revealed: boolean) => void;
+};
 
 export function MagicTreeQR(_props: MagicTreeQRProps) {
   return null;

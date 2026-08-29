@@ -21,12 +21,21 @@ import qrcodeFactory from 'qrcode-generator';
  */
 
 const UNIT = 0.24;
-const LEAF = '#4CAF50';
-const LEAF_DARK = '#3D8B40';
 const PLATE_LIGHT = '#F1F0EC';
 const PLATE_DARK = '#E3E1DA';
 const GRASS = '#5FAE4A';
 const TRUNK = '#6B4A33';
+
+/** Lightens (positive) or darkens (negative) a hex color by `percent` [-1, 1]. */
+function shade(hex: string, percent: number): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  const mix = (c: number) => Math.round(percent < 0 ? c * (1 + percent) : c + (255 - c) * percent);
+  const clamp = (c: number) => Math.max(0, Math.min(255, c));
+  return `#${[mix(r), mix(g), mix(b)].map((c) => clamp(c).toString(16).padStart(2, '0')).join('')}`;
+}
 
 type Modules = { count: number; dark: [number, number][] };
 
@@ -70,12 +79,14 @@ function Canopy({
   canopyHeight,
   revealed,
   onSettled,
+  leafColor,
 }: {
   modules: Modules;
   trunkHeight: number;
   canopyHeight: number;
   revealed: boolean;
   onSettled: (flat: boolean) => void;
+  leafColor: string;
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const t = useRef(revealed ? 0 : 1);
@@ -100,12 +111,13 @@ function Canopy({
   useEffect(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
+    const dark = shade(leafColor, -0.18);
     for (let i = 0; i < instances.length; i++) {
-      const c = new THREE.Color(instances[i].dark ? LEAF_DARK : LEAF);
+      const c = new THREE.Color(instances[i].dark ? dark : leafColor);
       mesh.setColorAt(i, c);
     }
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [instances]);
+  }, [instances, leafColor]);
 
   const apply = (v: number) => {
     const mesh = meshRef.current;
@@ -172,9 +184,12 @@ function Trunk({ height, revealed }: { height: number; revealed: boolean }) {
   );
 }
 
-/** A small isometric-style ground tile — a checkerboard plate with a few
-    grass tufts at the corners, echoing the reference's base. */
-function Ground({ radius }: { radius: number }) {
+/** The ground — a checkerboard plate with grass tufts in the tree pose.
+    Tapping doesn't just flatten the canopy: the foundation folds into the
+    code too, fading to a single flat plate (the QR's light quiet zone) and
+    losing its grass, so the whole base reads as part of the scannable code
+    rather than a decoration sitting under it. */
+function Ground({ radius, revealed }: { radius: number; revealed: boolean }) {
   const tiles = useMemo(() => {
     const size = radius * 2.3;
     const cells = 10;
@@ -202,37 +217,97 @@ function Ground({ radius }: { radius: number }) {
     return pts;
   }, [tiles.size]);
 
+  const tileRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const grassRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const t = useRef(revealed ? 1 : 0);
+  const from = useMemo(() => ({ light: new THREE.Color(PLATE_LIGHT), dark: new THREE.Color(PLATE_DARK) }), []);
+  const to = useMemo(() => new THREE.Color(PLATE_LIGHT), []);
+
+  useFrame((_, dt) => {
+    const target = revealed ? 1 : 0;
+    t.current += (target - t.current) * Math.min(1, dt * 3.2);
+    if (Math.abs(t.current - target) < 0.002) t.current = target;
+
+    tiles.out.forEach((tile, i) => {
+      const mesh = tileRefs.current[i];
+      const mat = mesh?.material as THREE.MeshStandardMaterial | undefined;
+      if (!mat) return;
+      mat.color.copy(tile.dark ? from.dark : from.light).lerp(to, t.current);
+    });
+    grassRefs.current.forEach((mesh) => {
+      const mat = mesh?.material as THREE.MeshStandardMaterial | undefined;
+      if (mat) mat.opacity = 1 - t.current;
+    });
+  });
+
   return (
     <group>
       {tiles.out.map((tile, i) => (
-        <mesh key={i} position={[tile.x, 0, tile.z]} rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh
+          key={i}
+          ref={(m) => {
+            tileRefs.current[i] = m;
+          }}
+          position={[tile.x, 0, tile.z]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
           <planeGeometry args={[tiles.cell * 0.96, tiles.cell * 0.96]} />
           <meshStandardMaterial color={tile.dark ? PLATE_DARK : PLATE_LIGHT} roughness={0.9} />
         </mesh>
       ))}
       {grassTufts.map((g, i) => (
-        <mesh key={i} position={[g.x, 0.05, g.z]} rotation={[0, g.rot, 0]} scale={g.scale}>
+        <mesh
+          key={i}
+          ref={(m) => {
+            grassRefs.current[i] = m;
+          }}
+          position={[g.x, 0.05, g.z]}
+          rotation={[0, g.rot, 0]}
+          scale={g.scale}
+        >
           <coneGeometry args={[0.05, 0.22, 4]} />
-          <meshStandardMaterial color={GRASS} roughness={0.8} />
+          <meshStandardMaterial color={GRASS} roughness={0.8} transparent />
         </mesh>
       ))}
     </group>
   );
 }
 
-function FitCamera({ radius }: { radius: number }) {
+/**
+ * Swings the camera from the isometric tree view up to a straight top-down
+ * view of the flat grid as `revealed` toggles — the tap doesn't just morph
+ * the tree, it rotates the whole shot overhead so the code reads flat and
+ * legible, then swings back down for the tree.
+ */
+function FitCamera({ treeRadius, flatRadius, revealed }: { treeRadius: number; flatRadius: number; revealed: boolean }) {
   const { camera, size } = useThree();
-  useEffect(() => {
+  const t = useRef(revealed ? 1 : 0);
+  const pos = useRef(new THREE.Vector3());
+  const look = useRef(new THREE.Vector3());
+
+  useFrame((_, dt) => {
     const cam = camera as THREE.PerspectiveCamera;
     const vFov = (cam.fov * Math.PI) / 180;
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (size.width / size.height));
-    const distance = (radius * 1.08) / Math.sin(Math.min(vFov, hFov) / 2);
-    cam.position.set(0, distance * 0.6, distance * 0.82);
-    cam.lookAt(0, radius * 0.45, 0);
+    const minFov = Math.min(vFov, hFov);
+    const distTree = (treeRadius * 1.08) / Math.sin(minFov / 2);
+    const distFlat = (flatRadius * 1.4) / Math.sin(minFov / 2);
+
+    const target = revealed ? 1 : 0;
+    t.current += (target - t.current) * Math.min(1, dt * 3.2);
+    if (Math.abs(t.current - target) < 0.002) t.current = target;
+    const v = t.current;
+
+    pos.current.set(0, distTree * 0.6, distTree * 0.82).lerp(new THREE.Vector3(0, distFlat, distFlat * 0.04), v);
+    look.current.set(0, treeRadius * 0.45, 0).lerp(new THREE.Vector3(0, 0.13, 0), v);
+
+    cam.position.copy(pos.current);
     cam.near = 0.1;
-    cam.far = distance * 4;
+    cam.far = Math.max(distTree, distFlat) * 4;
     cam.updateProjectionMatrix();
-  }, [camera, size.width, size.height, radius]);
+    cam.lookAt(look.current);
+  });
+
   return null;
 }
 
@@ -244,10 +319,8 @@ function Controls() {
     const instance = new OrbitControls(camera, gl.domElement);
     instance.enablePan = false;
     instance.enableZoom = false;
-    instance.enableDamping = true;
-    instance.dampingFactor = 0.08;
-    instance.autoRotate = true;
-    instance.autoRotateSpeed = 1;
+    instance.enableRotate = false;
+    instance.autoRotate = false;
     controls.current = instance;
     return () => {
       instance.dispose();
@@ -266,10 +339,12 @@ function Scene({
   modules,
   revealed,
   onSettled,
+  leafColor,
 }: {
   modules: Modules;
   revealed: boolean;
   onSettled: (flat: boolean) => void;
+  leafColor: string;
 }) {
   const span = modules.count * UNIT;
   const radius = span * 0.5;
@@ -282,7 +357,7 @@ function Scene({
       <directionalLight position={[3, 5, 4]} intensity={1.1} />
       <hemisphereLight args={['#ffffff', '#dcd8cf', 0.4]} />
 
-      <Ground radius={radius} />
+      <Ground radius={radius} revealed={revealed} />
       <Trunk height={trunkHeight} revealed={revealed} />
       <Canopy
         modules={modules}
@@ -290,27 +365,57 @@ function Scene({
         canopyHeight={canopyHeight}
         revealed={revealed}
         onSettled={onSettled}
+        leafColor={leafColor}
       />
 
-      <FitCamera radius={trunkHeight + canopyHeight + radius * 0.3} />
+      <FitCamera treeRadius={trunkHeight + canopyHeight + radius * 0.3} flatRadius={radius} revealed={revealed} />
       <Controls />
     </>
   );
 }
 
-export type MagicTreeQRProps = { value: string; width: number; height: number };
+export type MagicTreeQRProps = {
+  value: string;
+  width: number;
+  height: number;
+  leafColor?: string;
+  hint?: boolean;
+  hintColor?: string;
+  onToggle?: (revealed: boolean) => void;
+};
 
-export function MagicTreeQR({ value, width, height }: MagicTreeQRProps) {
+export function MagicTreeQR({
+  value,
+  width,
+  height,
+  leafColor = '#4CAF50',
+  hint = true,
+  hintColor,
+  onToggle,
+}: MagicTreeQRProps) {
   const modules = useMemo(() => encode(value), [value]);
   const [revealed, setRevealed] = useState(false);
   const [settled, setSettled] = useState(false);
+
+  const toggle = () => {
+    const next = !revealed;
+    setRevealed(next);
+    onToggle?.(next);
+  };
 
   return (
     <div style={{ width, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div
         style={{ width, height, cursor: 'pointer' }}
-        onClick={() => setRevealed((v) => !v)}
+        onClick={toggle}
         role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggle();
+          }
+        }}
         aria-label={revealed ? 'Show the tree' : 'Show the QR code'}
       >
         <Canvas
@@ -319,21 +424,23 @@ export function MagicTreeQR({ value, width, height }: MagicTreeQRProps) {
           gl={{ antialias: true, alpha: true }}
           style={{ background: 'transparent' }}
         >
-          <Scene modules={modules} revealed={revealed} onSettled={setSettled} />
+          <Scene modules={modules} revealed={revealed} onSettled={setSettled} leafColor={leafColor} />
         </Canvas>
       </div>
-      <span
-        style={{
-          marginTop: 6,
-          fontFamily: 'IBMPlexMono_400Regular, ui-monospace, monospace',
-          fontSize: 9.5,
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.5)',
-        }}
-      >
-        {revealed && settled ? 'Tap to see the tree' : 'Tap the tree to see the QR code'}
-      </span>
+      {hint && (
+        <span
+          style={{
+            marginTop: 6,
+            fontFamily: 'IBMPlexMono_400Regular, ui-monospace, monospace',
+            fontSize: 9.5,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+            color: hintColor ?? 'rgba(255,255,255,0.5)',
+          }}
+        >
+          {revealed && settled ? 'Tap to see the tree' : 'Tap the tree to see the QR code'}
+        </span>
+      )}
     </div>
   );
 }

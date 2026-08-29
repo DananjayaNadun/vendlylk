@@ -37,6 +37,11 @@ type ScrollContextValue = {
   subscribe: (listener: Listener) => () => void;
   /** Called by the page ScrollView on every scroll event. */
   publish: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+  /** Re-runs every listener at the current offset without a real scroll
+      event — used right after the ScrollView reports its layout height, so
+      Reveal doesn't stay stuck invisible on a page short enough that the
+      user never has to scroll to see it. */
+  notify: () => void;
   /** Sections hand over their node so their position can be read when needed. */
   registerSection: (id: SectionId, node: unknown) => void;
   scrollToSection: (id: SectionId) => void;
@@ -90,16 +95,23 @@ export function ScrollProvider({
    */
   const frame = useRef<number | null>(null);
 
-  const publish = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    offset.current = event.nativeEvent.contentOffset.y;
-    const layoutHeight = event.nativeEvent.layoutMeasurement?.height;
-    if (layoutHeight) viewportHeight.current = layoutHeight;
+  const notify = useCallback(() => {
     if (frame.current != null) return;
     frame.current = requestAnimationFrame(() => {
       frame.current = null;
       listeners.current.forEach((listener) => listener(offset.current));
     });
   }, []);
+
+  const publish = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      offset.current = event.nativeEvent.contentOffset.y;
+      const layoutHeight = event.nativeEvent.layoutMeasurement?.height;
+      if (layoutHeight) viewportHeight.current = layoutHeight;
+      notify();
+    },
+    [notify],
+  );
 
   const subscribe = useCallback((listener: Listener) => {
     listeners.current.add(listener);
@@ -147,11 +159,12 @@ export function ScrollProvider({
       viewportHeight,
       subscribe,
       publish,
+      notify,
       registerSection,
       scrollToSection,
       scrollToTop,
     }),
-    [subscribe, publish, registerSection, scrollToSection, scrollToTop],
+    [subscribe, publish, notify, registerSection, scrollToSection, scrollToTop],
   );
 
   return <ScrollContext.Provider value={value}>{children}</ScrollContext.Provider>;

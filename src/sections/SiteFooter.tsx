@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { brand, icons } from '@/assets';
 import { WhatsAppIcon, XIcon, YouTubeIcon } from '@/components/icons';
 import { metrics } from '@/components/Type';
@@ -9,7 +10,7 @@ import { color, font, layout } from '@/theme/tokens';
 import { autoFitColumns, trackWidth, useViewport } from '@/theme/responsive';
 import { SectionId, useScroll } from '@/scroll/ScrollProvider';
 
-/** Where each footer link jumps to, since there are no URL fragments here. */
+/** Product links jump within the homepage — there are no URL fragments here. */
 const TARGETS: Record<string, SectionId> = {
   Orders: 'orders',
   Customers: 'customers',
@@ -17,18 +18,47 @@ const TARGETS: Record<string, SectionId> = {
   'AI Assistant': 'ai',
   'COD Reliability': 'cod',
   Storefront: 'storefront',
-  'Food & Beverages': 'categories',
-  'Fashion & Apparel': 'categories',
-  'Beauty & Health': 'categories',
-  Electronics: 'categories',
-  'Home & Lifestyle': 'categories',
-  'General Retail': 'categories',
+};
+
+/** Everything else is a real page. */
+const ROUTES: Record<string, string> = {
+  'Food & Beverages': '/solutions/food-beverages',
+  'Fashion & Apparel': '/solutions/fashion-apparel',
+  'Beauty & Health': '/solutions/beauty-health',
+  Electronics: '/solutions/electronics',
+  'Home & Lifestyle': '/solutions/home-lifestyle',
+  'General Retail': '/solutions/general-retail',
+  'Help Centre': '/resources/help-centre',
+  Documentation: '/resources/documentation',
+  Guides: '/resources/guides',
+  FAQ: '/resources/faq',
+  About: '/company/about',
+  Contact: '/company/contact',
+  Careers: '/company/careers',
+  Partners: '/company/partners',
+  Help: '/support/help',
+  'Contact Support': '/support/contact-support',
+  'Terms of Service': '/legal/terms-of-service',
+  'Privacy Policy': '/legal/privacy-policy',
+  'Cookie Policy': '/legal/cookie-policy',
+  'Data Protection': '/legal/data-protection',
 };
 
 export function SiteFooter() {
   const { f, gutter, isMobile, width: viewportWidth } = useViewport();
   const { registerSection, scrollToSection } = useScroll();
+  const router = useRouter();
   const [width, onLayout] = useMeasuredWidth();
+
+  const go = (label: string) => {
+    const target = TARGETS[label];
+    if (target) {
+      scrollToSection(target);
+      return;
+    }
+    const route = ROUTES[label];
+    if (route) router.push(route as any);
+  };
 
   /* grid-template-columns: minmax(240px,1.5fr) repeat(auto-fit, minmax(140px,1fr)) */
   const gap = 32;
@@ -102,14 +132,7 @@ export function SiteFooter() {
               </Text>
               <View style={{ gap: 11 }}>
                 {column.links.map((link) => (
-                  <FooterLink
-                    key={link}
-                    label={link}
-                    onPress={() => {
-                      const target = TARGETS[link];
-                      if (target) scrollToSection(target);
-                    }}
-                  />
+                  <FooterLink key={link} label={link} onPress={() => go(link)} />
                 ))}
               </View>
             </View>
@@ -132,7 +155,7 @@ export function SiteFooter() {
           <Text style={[{ fontFamily: font.body, color: color.white42 }, metrics(13, 1.4)]}>© 2026 Vendly</Text>
 
           {['Terms of Service', 'Privacy Policy', 'Cookie Policy', 'Data Protection'].map((item) => (
-            <FooterLink key={item} label={item} small />
+            <FooterLink key={item} label={item} onPress={() => go(item)} small />
           ))}
 
           <View style={{ flex: 1, minWidth: 0 }} />

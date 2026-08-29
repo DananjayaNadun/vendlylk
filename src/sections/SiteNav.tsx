@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Animated, Easing, Image, Pressable, ScrollView, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { brand, products } from '@/assets';
 import { metrics } from '@/components/Type';
 import { color, font, layout, radius, shadow } from '@/theme/tokens';
@@ -19,18 +19,20 @@ const PRODUCT_LINKS: { title: string; desc: string; to: SectionId; on?: boolean 
 ];
 
 const SOLUTION_LINKS = [
-  { label: 'Food & Beverages', img: products.burger },
-  { label: 'Fashion & Apparel', img: products.hoodie },
-  { label: 'Beauty & Health', img: products.facialOil },
-  { label: 'Electronics', img: products.headphones },
-  { label: 'Home & Lifestyle', img: products.tableLamp },
-  { label: 'General Retail', img: products.giftBag },
-];
+  { label: 'Food & Beverages', img: products.burger, to: '/solutions/food-beverages' },
+  { label: 'Fashion & Apparel', img: products.hoodie, to: '/solutions/fashion-apparel' },
+  { label: 'Beauty & Health', img: products.facialOil, to: '/solutions/beauty-health' },
+  { label: 'Electronics', img: products.headphones, to: '/solutions/electronics' },
+  { label: 'Home & Lifestyle', img: products.tableLamp, to: '/solutions/home-lifestyle' },
+  { label: 'General Retail', img: products.giftBag, to: '/solutions/general-retail' },
+] as const;
 
 export function SiteNav() {
   const { gutter, isMobile } = useViewport();
   const { scrollToSection, scrollToTop } = useScroll();
   const router = useRouter();
+  const pathname = usePathname();
+  const onHome = pathname === '/';
 
   const [menu, setMenu] = useState<MenuKey | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -69,10 +71,24 @@ export function SiteNav() {
     closeTimer.current = setTimeout(() => setMenu(null), 120);
   };
 
+  /* On the homepage this jumps within the page; anywhere else there is
+     nothing to scroll to, so it goes home instead of silently doing nothing. */
   const go = (id: SectionId) => {
     setMenu(null);
     setSheetOpen(false);
-    scrollToSection(id);
+    if (onHome) {
+      scrollToSection(id);
+    } else {
+      router.push('/');
+    }
+  };
+
+  const goHome = () => {
+    if (onHome) {
+      scrollToTop();
+    } else {
+      router.push('/');
+    }
   };
 
   return (
@@ -116,7 +132,7 @@ export function SiteNav() {
               gap: 24,
             }}
           >
-            <Pressable onPress={scrollToTop} accessibilityRole="link" accessibilityLabel="Vendly.lk — home">
+            <Pressable onPress={goHome} accessibilityRole="link" accessibilityLabel="Vendly.lk — home">
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <Image source={brand.light} style={{ width: 26, height: 26 }} resizeMode="contain" />
                 <Text style={[{ fontFamily: font.displayBold, color: color.white }, metrics(19, 1.2, -0.03)]}>
@@ -221,7 +237,15 @@ export function SiteNav() {
           {menu === 'solutions' && !isMobile ? (
             <MegaPanel width={560} padding={14} gap={2} onOpen={() => openMenu('solutions')} onClose={scheduleClose}>
               {SOLUTION_LINKS.map((link) => (
-                <MegaCat key={link.label} {...link} onPress={() => go('categories')} />
+                <MegaCat
+                  key={link.label}
+                  label={link.label}
+                  img={link.img}
+                  onPress={() => {
+                    setMenu(null);
+                    router.push(link.to as any);
+                  }}
+                />
               ))}
             </MegaPanel>
           ) : null}
