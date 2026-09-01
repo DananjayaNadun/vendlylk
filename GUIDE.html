@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vendly.lk — Your Guide to Changing This Website</title>
+<style>
+  :root{
+    --bg:#faf9f7; --surface:#ffffff; --surface2:#f3f1ed; --ink:#14171f; --muted:#5c6273;
+    --faint:#8a8f9e; --line:rgba(20,23,31,.12); --line-soft:rgba(20,23,31,.07);
+    --accent:#2b4cf2; --accent-soft:#eef1ff; --ok:#0b7a5a; --ok-soft:#e7f6ee;
+    --warn:#8a5a12; --warn-soft:#fdf3e7; --bad:#b4451a; --bad-soft:#fbeae3;
+    --code-bg:#14171f; --code-ink:#e9ecf5;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --radius:12px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0e1015; --surface:#161922; --surface2:#1d212c; --ink:#f2f4f8; --muted:#a6adbd;
+      --faint:#79808f; --line:rgba(255,255,255,.14); --line-soft:rgba(255,255,255,.08);
+      --accent:#7e93ff; --accent-soft:rgba(126,147,255,.14); --ok:#4ecb9a; --ok-soft:rgba(78,203,154,.14);
+      --warn:#e0a955; --warn-soft:rgba(224,169,85,.14); --bad:#f08160; --bad-soft:rgba(240,129,96,.14);
+      --code-bg:#080a0e; --code-ink:#e9ecf5;
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth; scroll-padding-top:20px}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased}
+
+  /* ---------- shell ---------- */
+  .shell{display:grid;grid-template-columns:270px minmax(0,1fr);gap:0;max-width:1240px;margin:0 auto}
+  nav.side{position:sticky;top:0;height:100vh;overflow-y:auto;padding:28px 20px 40px;
+           border-right:1px solid var(--line-soft)}
+  nav.side h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);
+              margin:0 0 14px;font-weight:600}
+  nav.side a{display:block;padding:7px 10px;border-radius:8px;color:var(--muted);
+             text-decoration:none;font-size:14px;line-height:1.35;margin-bottom:1px}
+  nav.side a:hover{background:var(--surface2);color:var(--ink)}
+  nav.side a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  main{padding:44px 40px 120px;min-width:0}
+  @media (max-width:900px){
+    .shell{grid-template-columns:1fr}
+    nav.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line-soft)}
+    main{padding:28px 20px 80px}
+  }
+
+  /* ---------- type ---------- */
+  h1{font-size:clamp(28px,5vw,42px);line-height:1.1;letter-spacing:-.03em;margin:0 0 12px}
+  h2{font-size:clamp(21px,3vw,28px);line-height:1.2;letter-spacing:-.02em;
+     margin:56px 0 6px;padding-top:14px;border-top:1px solid var(--line-soft)}
+  h2:first-of-type{border-top:0}
+  h3{font-size:17px;margin:30px 0 6px;letter-spacing:-.01em}
+  p{margin:0 0 14px;color:var(--muted)}
+  p strong,li strong{color:var(--ink)}
+  ul,ol{color:var(--muted);padding-left:22px;margin:0 0 14px}
+  li{margin-bottom:6px}
+  a{color:var(--accent)}
+  .lede{font-size:18px;color:var(--muted);max-width:64ch}
+  .step-no{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+           border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;
+           margin-right:9px;flex:none}
+
+  /* ---------- code ---------- */
+  .code{position:relative;background:var(--code-bg);border-radius:var(--radius);margin:0 0 16px;overflow:hidden}
+  .code pre{margin:0;padding:16px 18px;overflow-x:auto;color:var(--code-ink);
+            font-family:var(--mono);font-size:13.5px;line-height:1.7}
+  .code .cap{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;
+             background:rgba(255,255,255,.05);border-bottom:1px solid rgba(255,255,255,.08);
+             font-family:var(--mono);font-size:11.5px;color:#9aa3b8}
+  .copy{background:rgba(255,255,255,.1);border:0;color:#cfd6e6;font-family:var(--mono);
+        font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer}
+  .copy:hover{background:rgba(255,255,255,.2)}
+  .copy.done{background:var(--ok);color:#fff}
+  code.inline{font-family:var(--mono);font-size:.88em;background:var(--surface2);
+              padding:2px 6px;border-radius:5px;color:var(--ink);border:1px solid var(--line-soft)}
+
+  /* ---------- boxes ---------- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+        padding:20px;margin:0 0 18px}
+  .note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:14px 16px;
+        border-radius:0 10px 10px 0;margin:0 0 16px}
+  .warn{border-left:3px solid var(--warn);background:var(--warn-soft);padding:14px 16px;
+        border-radius:0 10px 10px 0;margin:0 0 16px}
+  .danger{border-left:3px solid var(--bad);background:var(--bad-soft);padding:14px 16px;
+          border-radius:0 10px 10px 0;margin:0 0 16px}
+  .note p,.warn p,.danger p{margin:0;color:var(--ink);font-size:14.5px}
+  .note b,.warn b,.danger b{display:block;margin-bottom:3px}
+
+  details{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+          padding:0;margin:0 0 12px;overflow:hidden}
+  details summary{cursor:pointer;padding:13px 16px;font-weight:600;font-size:14.5px;list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary::before{content:"▸ ";color:var(--accent);display:inline-block;
+                          transition:transform .15s;margin-right:4px}
+  details[open] summary::before{content:"▾ "}
+  details .body{padding:0 16px 16px;font-size:14.5px;color:var(--muted)}
+  details .body p:last-child{margin-bottom:0}
+
+  /* ---------- tables ---------- */
+  .tw{overflow-x:auto;margin:0 0 18px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:440px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  th{font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:600}
+  td{color:var(--muted)} td:first-child{color:var(--ink)}
+  td code,th code{font-family:var(--mono);font-size:12.5px}
+
+  /* ---------- interactive ---------- */
+  .lab{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+       overflow:hidden;margin:0 0 20px}
+  .lab-head{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--line);
+            font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .lab-body{padding:18px}
+  .ctl{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+  .ctl label{font-size:13px;color:var(--muted);min-width:112px;font-family:var(--mono)}
+  .ctl input[type=range]{flex:1;min-width:130px;accent-color:var(--accent)}
+  .ctl output{font-family:var(--mono);font-size:13px;color:var(--accent);min-width:52px;font-weight:600}
+  .seg{display:inline-flex;background:var(--surface2);border-radius:8px;padding:3px;gap:3px;flex-wrap:wrap}
+  .seg button{border:0;background:transparent;padding:6px 13px;border-radius:6px;cursor:pointer;
+              font-size:13px;color:var(--muted);font-family:var(--sans)}
+  .seg button.on{background:var(--surface);color:var(--ink);font-weight:600;
+                 box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .stage{background:var(--surface2);border-radius:10px;padding:14px;min-height:130px;
+         border:1px dashed var(--line)}
+  .box{background:var(--accent);color:#fff;border-radius:8px;padding:12px 14px;
+       font-size:13px;font-weight:600;text-align:center}
+  .box.b2{background:#12a97b}.box.b3{background:#c98a2b}
+
+  /* swatches */
+  .sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px}
+  .sw button{border:1px solid var(--line);border-radius:10px;padding:0;overflow:hidden;
+             cursor:pointer;background:var(--surface);text-align:left;font-family:var(--sans)}
+  .sw .chip{height:46px}
+  .sw .nm{padding:8px 10px;font-family:var(--mono);font-size:11.5px;color:var(--ink)}
+  .sw .hx{padding:0 10px 8px;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+
+  /* quiz */
+  .quiz{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+        padding:18px;margin:0 0 16px}
+  .quiz .q{font-weight:600;margin-bottom:12px;font-size:15px}
+  .quiz .opt{display:block;width:100%;text-align:left;padding:11px 14px;margin-bottom:7px;
+             border:1px solid var(--line);border-radius:9px;background:var(--bg);cursor:pointer;
+             font-size:14px;color:var(--ink);font-family:var(--sans);line-height:1.45}
+  .quiz .opt:hover{border-color:var(--accent)}
+  .quiz .opt.right{background:var(--ok-soft);border-color:var(--ok);color:var(--ok);font-weight:600}
+  .quiz .opt.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+  .quiz .fb{margin-top:10px;font-size:14px;padding:11px 13px;border-radius:8px;display:none}
+  .quiz .fb.show{display:block}
+  .quiz .fb.good{background:var(--ok-soft);color:var(--ok)}
+  .quiz .fb.bad{background:var(--warn-soft);color:var(--warn)}
+
+  /* checklist */
+  .check li{list-style:none;margin-bottom:9px}
+  .check{padding-left:0}
+  .check label{display:flex;gap:11px;align-items:flex-start;cursor:pointer;font-size:14.5px;color:var(--muted)}
+  .check input{margin-top:4px;width:17px;height:17px;accent-color:var(--accent);flex:none;cursor:pointer}
+  .check input:checked + span{color:var(--faint);text-decoration:line-through}
+  .prog{height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;margin:14px 0 6px}
+  .prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+
+  /* file tree */
+  .tree{font-family:var(--mono);font-size:13.5px;line-height:1.95}
+  .tree button{background:none;border:0;padding:1px 6px;border-radius:5px;cursor:pointer;
+               font-family:var(--mono);font-size:13.5px;color:var(--accent);text-align:left}
+  .tree button:hover{background:var(--accent-soft)}
+  .tree .cm{color:var(--faint)}
+  .tree .dir{color:var(--ink);font-weight:600}
+  #fileInfo{margin-top:14px;padding:14px 16px;background:var(--accent-soft);border-radius:10px;
+            font-size:14px;color:var(--ink);display:none}
+  #fileInfo.show{display:block}
+  #fileInfo b{font-family:var(--mono);display:block;margin-bottom:4px}
+
+  kbd{font-family:var(--mono);font-size:12px;background:var(--surface2);border:1px solid var(--line);
+      border-bottom-width:2px;border-radius:5px;padding:2px 6px}
+  .pill{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+        text-transform:uppercase;padding:3px 9px;border-radius:20px;background:var(--accent-soft);
+        color:var(--accent);font-weight:600;margin-bottom:14px}
+  hr{border:0;border-top:1px solid var(--line-soft);margin:34px 0}
+  .foot{margin-top:60px;padding-top:22px;border-top:1px solid var(--line-soft);
+        font-size:13.5px;color:var(--faint)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="side">
+  <h2>Contents</h2>
+  <a href="#start" class="on">Start here</a>
+  <a href="#setup">1 · Get it running</a>
+  <a href="#bigidea">2 · The big idea</a>
+  <a href="#anatomy">3 · Reading a component</a>
+  <a href="#files">4 · Where everything lives</a>
+  <a href="#firstchange">5 · Your first change</a>
+  <a href="#colours">6 · Colours &amp; fonts</a>
+  <a href="#layout">7 · Layout (flexbox)</a>
+  <a href="#newpage">8 · Adding a page</a>
+  <a href="#truth">9 · The honesty rules</a>
+  <a href="#errors">10 · When it breaks</a>
+  <a href="#checklist">11 · Before you finish</a>
+  <a href="#glossary">12 · Glossary</a>
+  <a href="#next">13 · Where to go next</a>
+</nav>
+
+<main>
+
+<!-- ================= START ================= -->
+<section id="start">
+  <span class="pill">Read me first</span>
+  <h1>How to change this website</h1>
+  <p class="lede">You built a real website. This guide teaches you how it works and how to
+  change it yourself — assuming you know a little Python and nothing else.</p>
+
+  <div class="note">
+    <p><b>You already know more than you think.</b>
+    You've started Python. Loops, variables, functions, indentation — that all
+    transfers. This guide points out the Python parallel every time something new appears.</p>
+  </div>
+
+  <h3>How to use this</h3>
+  <ul>
+    <li><b>Go in order the first time.</b> Sections 1–5 get you making real changes.</li>
+    <li><b>Actually try the interactive bits.</b> Sliders, quizzes and playgrounds are here
+      because reading about layout teaches you far less than dragging a slider does.</li>
+    <li><b>You cannot break anything permanently.</b> Your work is saved in Git. Section 10
+      shows you how to undo any mistake with one command.</li>
+  </ul>
+
+  <div class="warn">
+    <p><b>Keep this file.</b> It's saved in your project folder as <code class="inline">GUIDE.html</code>.
+    Double-click it any time to open it in your browser. It works offline, forever, with no internet needed.</p>
+  </div>
+</section>
+
+<!-- ================= SETUP ================= -->
+<section id="setup">
+  <h2>1 · Get it running on your computer</h2>
+  <p>Before changing anything, make sure you can see the site running. Open a terminal
+  (on Windows: search for <b>PowerShell</b>) and navigate to the project folder.</p>
+
+  <div class="code">
+    <div class="cap"><span>Terminal — do this once</span><button class="copy">Copy</button></div>
+<pre>cd "D:\Projects\marketing 1"
+npm install</pre>
+  </div>
+
+  <p><code class="inline">npm install</code> downloads the libraries the project depends on. It's
+  the same idea as <code class="inline">pip install</code> in Python. It takes a few minutes the
+  first time and creates a <code class="inline">node_modules</code> folder — never edit that folder.</p>
+
+  <div class="code">
+    <div class="cap"><span>Terminal — every time you work</span><button class="copy">Copy</button></div>
+<pre>npm run web</pre>
+  </div>
+
+  <p>This starts a development server and prints a web address, usually
+  <code class="inline">http://localhost:8081</code>. Open it in your browser. Leave this terminal
+  running while you work — when you save a file, the page updates by itself.</p>
+
+  <details>
+    <summary>What is "localhost" and why 8081?</summary>
+    <div class="body">
+      <p><b>localhost</b> means "this computer". The site isn't on the internet — it's being
+      served by the program you just started, and only you can see it. The number
+      (<b>8081</b>) is the <em>port</em>, like a door number, so your computer knows which
+      program to hand the request to. Nobody else can reach it.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>The other commands, and when you need them</summary>
+    <div class="body">
+      <table>
+        <tr><th>Command</th><th>What it does</th></tr>
+        <tr><td><code>npm run web</code></td><td>Development server. Use this while working.</td></tr>
+        <tr><td><code>npm run typecheck</code></td><td>Checks for mistakes without running. Run before you finish.</td></tr>
+        <tr><td><code>npm run build:web</code></td><td>Builds the finished site into <code>dist/</code> for publishing.</td></tr>
+        <tr><td><code>node serve-dist.js</code></td><td>Previews the finished build at port 4174.</td></tr>
+      </table>
+      <p>To stop a running server, click the terminal and press <kbd>Ctrl</kbd> + <kbd>C</kbd>.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ================= BIG IDEA ================= -->
+<section id="bigidea">
+  <h2>2 · The big idea (don't skip this)</h2>
+  <p>Most websites are written in HTML. <b>This one is not.</b> It's written in
+  <b>React Native</b> — a system designed for phone apps that can also produce a website.</p>
+  <p>That means normal HTML tutorials will give you code that <em>does not work here</em>.
+  Here's the translation:</p>
+
+  <div class="lab">
+    <div class="lab-head">Try it · Flip between what you'd write elsewhere and what you write here</div>
+    <div class="lab-body">
+      <div class="seg" id="rnSeg" style="margin-bottom:14px">
+        <button data-v="html">Normal HTML (wrong here)</button>
+        <button data-v="rn" class="on">This project (correct)</button>
+      </div>
+      <div class="code" style="margin:0">
+        <div class="cap"><span id="rnCap">React Native — correct</span></div>
+<pre id="rnCode">import { View, Text } from 'react-native';
+
+&lt;View style={{ padding: 20, backgroundColor: '#eee' }}&gt;
+  &lt;Text style={{ fontSize: 16 }}&gt;Hello&lt;/Text&gt;
+&lt;/View&gt;</pre>
+      </div>
+      <p id="rnNote" style="margin:12px 0 0;font-size:14px">
+        <b>Note the differences:</b> <code class="inline">View</code> instead of
+        <code class="inline">div</code>, <code class="inline">Text</code> instead of
+        <code class="inline">p</code>, and <code class="inline">20</code> as a plain number
+        rather than the string <code class="inline">'20px'</code>.</p>
+    </div>
+  </div>
+
+  <h3>The five rules that follow from this</h3>
+  <div class="tw"><table>
+    <tr><th>Rule</th><th>Why it matters</th></tr>
+    <tr><td>All text goes inside <code>&lt;Text&gt;</code></td>
+        <td>A bare word inside a <code>&lt;View&gt;</code> crashes the page. This is the #1 beginner error.</td></tr>
+    <tr><td>Sizes are numbers, not strings</td>
+        <td><code>padding: 20</code> ✅ &nbsp; <code>padding: '20px'</code> ❌</td></tr>
+    <tr><td>Nothing is inherited</td>
+        <td>Setting a font on a parent does <em>not</em> affect children. Set it on each <code>&lt;Text&gt;</code>.</td></tr>
+    <tr><td>Stacking is vertical by default</td>
+        <td>In HTML boxes stack vertically too, but here you must write <code>flexDirection:'row'</code> to go sideways.</td></tr>
+    <tr><td>No CSS files, no hover in CSS</td>
+        <td>Styles live in the component. Hover uses <code>onHoverIn</code>/<code>onHoverOut</code>.</td></tr>
+  </table></div>
+
+  <div class="quiz" data-answer="1">
+    <div class="q">Quick check — which of these will crash the page?</div>
+    <button class="opt">&lt;Text style={{ fontSize: 14 }}&gt;Hello&lt;/Text&gt;</button>
+    <button class="opt">&lt;View&gt;Hello&lt;/View&gt;</button>
+    <button class="opt">&lt;View&gt;&lt;Text&gt;Hello&lt;/Text&gt;&lt;/View&gt;</button>
+    <div class="fb"></div>
+  </div>
+</section>
+
+<!-- ================= ANATOMY ================= -->
+<section id="anatomy">
+  <h2>3 · Reading a component, line by line</h2>
+  <p>A <b>component</b> is a reusable piece of interface. It is just a function that returns
+  what should appear on screen — very close to a Python function that returns a value.</p>
+
+  <div class="tw"><table>
+    <tr><th>Python (you know this)</th><th>JavaScript (this project)</th></tr>
+    <tr><td><code>def greet(name):</code></td><td><code>function greet(name) {</code></td></tr>
+    <tr><td>Indentation defines blocks</td><td><code>{ }</code> braces define blocks</td></tr>
+    <tr><td><code>x = 5</code></td><td><code>const x = 5;</code></td></tr>
+    <tr><td><code>my_variable</code> (snake_case)</td><td><code>myVariable</code> (camelCase)</td></tr>
+    <tr><td><code># comment</code></td><td><code>// comment</code></td></tr>
+    <tr><td><code>{"a": 1}</code> dictionary</td><td><code>{a: 1}</code> object</td></tr>
+  </table></div>
+
+  <p>Here is a real, complete component. Every line is explained underneath.</p>
+
+  <div class="code">
+    <div class="cap"><span>A component, annotated</span><button class="copy">Copy</button></div>
+<pre>import { View, Text } from 'react-native';          // 1
+import { color, font } from '@/theme/tokens';       // 2
+
+export function Greeting({ name }) {                // 3
+  return (                                          // 4
+    &lt;View style={{ padding: 20 }}&gt;                   // 5
+      &lt;Text style={{ color: color.ink,
+                     fontFamily: font.body }}&gt;      // 6
+        Hello, {name}                               // 7
+      &lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</pre>
+  </div>
+
+  <ol style="font-size:14.5px">
+    <li><b>Import the building blocks.</b> Like <code class="inline">from x import y</code> in Python.</li>
+    <li><b>Import the design tokens.</b> <code class="inline">@/</code> is a shortcut meaning
+      the <code class="inline">src</code> folder. So this reads <code class="inline">src/theme/tokens</code>.</li>
+    <li><b>Define the component.</b> <code class="inline">export</code> makes it usable by other files.
+      <code class="inline">{ name }</code> receives an input — called a <b>prop</b>.</li>
+    <li><b>Return what to display.</b> Same as Python's <code class="inline">return</code>.</li>
+    <li><b>A container.</b> The outer <code class="inline">{ }</code> means "JavaScript here",
+      the inner <code class="inline">{ }</code> is the style object. That's why you see
+      <code class="inline">{{ }}</code> so often.</li>
+    <li><b>Styling from tokens</b> rather than typed-in colours (section 6 explains why).</li>
+    <li><b>Insert a variable</b> into text with <code class="inline">{ }</code> — like a Python f-string.</li>
+  </ol>
+
+  <details>
+    <summary>Why the double braces <code>{{ }}</code>?</summary>
+    <div class="body">
+      <p>They're two different things stacked. The outer <code>{ }</code> tells the template
+      "switch to JavaScript now". The inner <code>{ }</code> is an ordinary object, exactly like
+      a Python dictionary. So <code>style={{ padding: 20 }}</code> means: <em>the style
+      property equals the object <code>{padding: 20}</code></em>.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ================= FILES ================= -->
+<section id="files">
+  <h2>4 · Where everything lives</h2>
+  <p>Click any file below to find out what it does and whether you should touch it.</p>
+
+  <div class="lab">
+    <div class="lab-head">Explore · click a file</div>
+    <div class="lab-body">
+      <div class="tree" id="tree">
+<div><span class="dir">app/</span> <span class="cm">— pages. The filename becomes the web address.</span></div>
+<div>&nbsp;&nbsp;<button data-k="index">index.tsx</button> <span class="cm">→ the homepage "/"</span></div>
+<div>&nbsp;&nbsp;<button data-k="getapp">get-app.tsx</button> <span class="cm">→ "/get-app"</span></div>
+<div>&nbsp;&nbsp;<button data-k="layout">_layout.tsx</button> <span class="cm">→ wraps every page</span></div>
+<div>&nbsp;&nbsp;<button data-k="slug">legal/[slug].tsx</button> <span class="cm">→ four legal pages</span></div>
+<div><span class="dir">src/</span> <span class="cm">— everything that isn't a page</span></div>
+<div>&nbsp;&nbsp;<button data-k="tokens">theme/tokens.ts</button> <span class="cm">← colours &amp; fonts</span></div>
+<div>&nbsp;&nbsp;<button data-k="content">data/contentPages.ts</button> <span class="cm">← page words</span></div>
+<div>&nbsp;&nbsp;<button data-k="data">data.ts</button> <span class="cm">← homepage words</span></div>
+<div>&nbsp;&nbsp;<button data-k="company">config/company.ts</button> <span class="cm">← business facts</span></div>
+<div>&nbsp;&nbsp;<button data-k="releases">releases.ts</button> <span class="cm">← download links</span></div>
+<div>&nbsp;&nbsp;<button data-k="sections">sections/</button> <span class="cm">← homepage blocks</span></div>
+<div>&nbsp;&nbsp;<button data-k="components">components/</button> <span class="cm">← reusable pieces</span></div>
+<div><button data-k="nm">node_modules/</button> <span class="cm">— never touch</span></div>
+<div><button data-k="dist">dist/</button> <span class="cm">— auto-generated, never edit</span></div>
+      </div>
+      <div id="fileInfo"></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>The shortcut that matters.</b> Want to change <em>words</em>? Go to
+    <code class="inline">src/data/contentPages.ts</code> or <code class="inline">src/data.ts</code>.
+    Want to change <em>colours</em>? Go to <code class="inline">src/theme/tokens.ts</code>.
+    Those three files cover most changes you'll want to make.</p>
+  </div>
+</section>
+
+<!-- ================= FIRST CHANGE ================= -->
+<section id="firstchange">
+  <h2>5 · Your first real change</h2>
+  <p>Let's change some words on the site. This is the safest possible edit — do it now
+  while <code class="inline">npm run web</code> is running so you see it happen live.</p>
+
+  <h3><span class="step-no">1</span>Open the file</h3>
+  <p>Open <code class="inline">src/data/contentPages.ts</code> in your editor
+  (VS Code is free and excellent). Press <kbd>Ctrl</kbd>+<kbd>F</kbd> and search for a phrase
+  you can see on the website — say <code class="inline">No open roles</code> or
+  <code class="inline">What does Vendly cost</code>.</p>
+
+  <h3><span class="step-no">2</span>Change the text between the quotes</h3>
+  <div class="code">
+    <div class="cap"><span>Before</span></div>
+<pre>{ q: 'What does Vendly cost?', a: 'The Starter plan is free and stays free…' },</pre>
+  </div>
+  <div class="code">
+    <div class="cap"><span>After — only the words inside the quotes changed</span></div>
+<pre>{ q: 'How much does it cost?', a: 'Starter is free forever…' },</pre>
+  </div>
+
+  <div class="danger">
+    <p><b>The three characters that break everything.</b> Keep the quotes
+    <code class="inline">'</code>, the commas <code class="inline">,</code> and the braces
+    <code class="inline">{ }</code> exactly where they are. Only change letters
+    <em>between</em> quotes. If your text contains an apostrophe — like
+    <em>don't</em> — write it as <code class="inline">"don't"</code> with double quotes
+    around the whole thing, or the apostrophe will end the text early.</p>
+  </div>
+
+  <h3><span class="step-no">3</span>Save and look</h3>
+  <p>Press <kbd>Ctrl</kbd>+<kbd>S</kbd>. Your browser updates within a second or two. If it
+  doesn't, refresh the page. If you see a red error screen, jump to
+  <a href="#errors">section 10</a> — it's almost always a missing quote or comma.</p>
+
+  <div class="quiz" data-answer="2">
+    <div class="q">Which edit is safe?</div>
+    <button class="opt">{ q: What does it cost?, a: 'Free' },</button>
+    <button class="opt">{ q: 'What does it cost?' a: 'Free' },</button>
+    <button class="opt">{ q: 'What does it cost?', a: 'Free to start' },</button>
+    <div class="fb"></div>
+  </div>
+</section>
+
+<!-- ================= COLOURS ================= -->
+<section id="colours">
+  <h2>6 · Colours and fonts</h2>
+  <p>Every colour on the site is defined once, in
+  <code class="inline">src/theme/tokens.ts</code>. Components refer to them by name.
+  Change the name's value and it updates <b>everywhere at once</b>.</p>
+
+  <div class="lab">
+    <div class="lab-head">Explore · click a colour to see its name and where it's used</div>
+    <div class="lab-body">
+      <div class="sw" id="sw"></div>
+      <div id="fileInfo2" style="margin-top:14px;padding:14px 16px;background:var(--accent-soft);
+           border-radius:10px;font-size:14px;display:none"></div>
+    </div>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>Using a token — always do this</span><button class="copy">Copy</button></div>
+<pre>import { color, font } from '@/theme/tokens';
+
+&lt;Text style={{ color: color.ink, fontFamily: font.body }}&gt;Hi&lt;/Text&gt;</pre>
+  </div>
+
+  <div class="warn">
+    <p><b>Don't type raw colours like <code class="inline">'#2b4cf2'</code> into a component.</b>
+    If the brand colour ever changes you'd have to hunt through 50 files. Using
+    <code class="inline">color.accent</code> means one edit changes everything — and the
+    site stays visually consistent.</p>
+  </div>
+
+  <h3>The font names</h3>
+  <div class="tw"><table>
+    <tr><th>Token</th><th>Use it for</th></tr>
+    <tr><td><code>font.displayBold</code></td><td>Big headings</td></tr>
+    <tr><td><code>font.body</code></td><td>Normal paragraphs</td></tr>
+    <tr><td><code>font.bodySemi</code></td><td>Slightly bolder body text, buttons</td></tr>
+    <tr><td><code>font.mono</code></td><td>Small uppercase labels</td></tr>
+  </table></div>
+
+  <details>
+    <summary>Why is text sizing written as <code>metrics(15, 1.6)</code>?</summary>
+    <div class="body">
+      <p>In CSS you can say line-height is <code>1.6</code> and the browser multiplies it by the
+      font size. React Native needs an exact pixel number instead. <code>metrics()</code> does
+      that multiplication for you: <code>metrics(15, 1.6)</code> means "15px text with
+      24px line height". Always use it rather than setting <code>fontSize</code> alone —
+      it keeps spacing consistent across the site.</p>
+    </div>
+  </details>
+</section>
+
+<!-- ================= LAYOUT ================= -->
+<section id="layout">
+  <h2>7 · Layout — arranging things on screen</h2>
+  <p>Everything is positioned with <b>flexbox</b>. There are only three properties you need
+  most of the time. Drag the controls and watch the boxes move — this teaches it faster
+  than any explanation.</p>
+
+  <div class="lab">
+    <div class="lab-head">Playground · change the values, watch the result</div>
+    <div class="lab-body">
+      <div class="ctl">
+        <label>flexDirection</label>
+        <div class="seg" id="fdSeg">
+          <button data-v="row" class="on">row</button>
+          <button data-v="column">column</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <label>justifyContent</label>
+        <div class="seg" id="jcSeg">
+          <button data-v="flex-start" class="on">flex-start</button>
+          <button data-v="center">center</button>
+          <button data-v="space-between">space-between</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <label>alignItems</label>
+        <div class="seg" id="aiSeg">
+          <button data-v="stretch" class="on">stretch</button>
+          <button data-v="center">center</button>
+          <button data-v="flex-end">flex-end</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <label>gap</label>
+        <input type="range" id="gapR" min="0" max="34" value="10">
+        <output id="gapO">10</output>
+      </div>
+      <div class="stage" id="stage" style="display:flex;flex-direction:row;
+           justify-content:flex-start;align-items:stretch;gap:10px">
+        <div class="box">One</div><div class="box b2">Two</div><div class="box b3">Three</div>
+      </div>
+      <div class="code" style="margin:14px 0 0">
+        <div class="cap"><span>The code for what you're seeing</span><button class="copy">Copy</button></div>
+<pre id="flexCode">&lt;View style={{
+  flexDirection: 'row',
+  justifyContent: 'flex-start',
+  alignItems: 'stretch',
+  gap: 10,
+}}&gt;</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="tw"><table>
+    <tr><th>Property</th><th>In plain English</th></tr>
+    <tr><td><code>flexDirection</code></td><td>Side by side (<code>row</code>) or stacked (<code>column</code>). Default is <code>column</code>.</td></tr>
+    <tr><td><code>justifyContent</code></td><td>Spacing <em>along</em> the direction you chose.</td></tr>
+    <tr><td><code>alignItems</code></td><td>Alignment <em>across</em> the other axis.</td></tr>
+    <tr><td><code>gap</code></td><td>Space between children. Simpler than margins — prefer it.</td></tr>
+    <tr><td><code>flex: 1</code></td><td>"Take up all remaining space."</td></tr>
+  </table></div>
+
+  <h3>Making it work on phones</h3>
+  <p>Screens vary. This project reads the width with a helper called
+  <code class="inline">useViewport()</code>:</p>
+  <div class="code">
+    <div class="cap"><span>Responsive layout</span><button class="copy">Copy</button></div>
+<pre>const { isMobile, gutter, f } = useViewport();
+
+&lt;View style={{
+  flexDirection: isMobile ? 'column' : 'row',   // stack on phones
+  padding: gutter,                              // edge spacing
+  fontSize: f(20, 4, 40),                       // min 20, grows, max 40
+}}&gt;</pre>
+  </div>
+  <p><code class="inline">condition ? a : b</code> is shorthand for if/else — it reads
+  "if isMobile then column, otherwise row". Python's version is
+  <code class="inline">a if condition else b</code>.</p>
+</section>
+
+<!-- ================= NEW PAGE ================= -->
+<section id="newpage">
+  <h2>8 · Adding a whole new page</h2>
+  <p>This project uses <b>file-based routing</b>: creating a file creates a web address.
+  No configuration, no list to register it in.</p>
+
+  <p>Create <code class="inline">app/hello.tsx</code> and it becomes
+  <code class="inline">yoursite.com/hello</code>. Paste this in:</p>
+
+  <div class="code">
+    <div class="cap"><span>app/hello.tsx — a complete working page</span><button class="copy">Copy</button></div>
+<pre>import React from 'react';
+import { Text, View } from 'react-native';
+import { ContentPage } from '@/components/ContentPage';
+import { Reveal } from '@/components/Reveal';
+import { metrics } from '@/components/Type';
+import { color, font } from '@/theme/tokens';
+
+export default function HelloPage() {
+  return (
+    &lt;ContentPage
+      eyebrow="Company"
+      title="Hello"
+      lede="A short line underneath the heading."
+    &gt;
+      &lt;Reveal index={0}&gt;
+        &lt;View style={{ maxWidth: 640 }}&gt;
+          &lt;Text style={[{ fontFamily: font.body, color: color.textMuted },
+                        metrics(15, 1.6)]}&gt;
+            Your paragraph goes here.
+          &lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/Reveal&gt;
+    &lt;/ContentPage&gt;
+  );
+}</pre>
+  </div>
+
+  <p>Save, then visit <code class="inline">http://localhost:8081/hello</code>. You get the
+  navigation bar, footer, scroll animations and search-engine tags for free, because
+  <code class="inline">ContentPage</code> supplies all of it.</p>
+
+  <div class="tw"><table>
+    <tr><th>Piece</th><th>What it gives you</th></tr>
+    <tr><td><code>ContentPage</code></td><td>Nav, footer, dark heading area, SEO tags</td></tr>
+    <tr><td><code>eyebrow</code></td><td>Small label above the title</td></tr>
+    <tr><td><code>title</code></td><td>The big heading, and the browser tab name</td></tr>
+    <tr><td><code>lede</code></td><td>Supporting line, also used as the search description</td></tr>
+    <tr><td><code>Reveal</code></td><td>Fades in on scroll. <code>index</code> staggers the order.</td></tr>
+  </table></div>
+
+  <p>To link to it from the footer, add an entry to <code class="inline">ROUTES</code> in
+  <code class="inline">src/sections/SiteFooter.tsx</code>.</p>
+
+  <div class="warn">
+    <p><b>One catch, for pages with square brackets.</b> A file like
+    <code class="inline">[slug].tsx</code> serves many addresses from one file. Those need a
+    list of every address at the bottom of the file (<code class="inline">generateStaticParams</code>).
+    If you add a new legal page, add its name to that list too — otherwise it won't be built.</p>
+  </div>
+</section>
+
+<!-- ================= TRUTH ================= -->
+<section id="truth">
+  <h2>9 · The honesty rules — please keep these</h2>
+  <p>This is the most important section, and it's not about code.</p>
+  <p>Vendly hasn't launched. There are no apps in the stores, no accounts, no support inbox.
+  An earlier version of this site claimed all of those things. Every claim was removed,
+  because <b>people act on what a website tells them</b> — they'd have applied for jobs that
+  didn't exist and waited for replies from an inbox nobody reads.</p>
+
+  <div class="danger">
+    <p><b>Never add a claim you can't back up.</b> No invented statistics, no fake job
+    listings, no "message sent" for a form that sends nothing, no download link that 404s,
+    and no promises about encryption or data handling.</p>
+  </div>
+
+  <h3>The two files that keep you honest</h3>
+  <p>Instead of writing unverified facts into page text, they live in config files with a
+  true/false switch. While the switch is <code class="inline">false</code>, the website
+  automatically hides or softens that claim.</p>
+
+  <div class="code">
+    <div class="cap"><span>src/config/company.ts</span><button class="copy">Copy</button></div>
+<pre>// false = not confirmed yet → the site quietly hides it
+supportEmail: fact('support@vendly.lk'),
+
+// Once the mailbox genuinely exists and someone reads it:
+supportEmail: fact('support@vendly.lk', true),</pre>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>src/releases.ts</span><button class="copy">Copy</button></div>
+<pre>// Shows "Soon" instead of a broken download button
+windows: { available: false, url: '.../Vendly-Setup.exe' },
+
+// Only after the file really downloads:
+windows: { available: true, url: '.../Vendly-Setup.exe' },</pre>
+  </div>
+
+  <div class="note">
+    <p><b>The rule of thumb.</b> Before flipping any switch to <code class="inline">true</code>,
+    open the link or send a test email yourself. If it works, flip it. If not, leave it —
+    the site is already saying the honest thing.</p>
+  </div>
+</section>
+
+<!-- ================= ERRORS ================= -->
+<section id="errors">
+  <h2>10 · When it breaks (it will, that's normal)</h2>
+  <p>Every programmer breaks things constantly. The skill isn't avoiding errors — it's
+  reading them calmly. Error messages usually name the file and line number.</p>
+
+  <details>
+    <summary>Red screen: "Unexpected token" or "Unexpected end of input"</summary>
+    <div class="body">
+      <p>A punctuation mistake — a missing quote, comma, or closing brace. Look at the
+      line number in the message, then the line <em>just above</em> it. Most often it's an
+      apostrophe inside single quotes: <code>'don't'</code> breaks; use <code>"don't"</code>.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>"Text strings must be rendered within a &lt;Text&gt; component"</summary>
+    <div class="body">
+      <p>You put words directly inside a <code>&lt;View&gt;</code>. Wrap them:
+      <code>&lt;View&gt;&lt;Text&gt;Hello&lt;/Text&gt;&lt;/View&gt;</code>.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>"Cannot find module '@/something'"</summary>
+    <div class="body">
+      <p>The import path is wrong. <code>@/</code> means the <code>src</code> folder, so
+      <code>@/theme/tokens</code> is <code>src/theme/tokens.ts</code>. Check spelling and
+      capitals — <code>Tokens</code> and <code>tokens</code> are different.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>The page is blank / nothing appears until I scroll</summary>
+    <div class="body">
+      <p>Content animates in on scroll. If a page stays blank, its scroll container
+      isn't reporting its height. Compare against a working page like
+      <code>app/company/[slug].tsx</code>.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>My content is cut off and the page won't scroll</summary>
+    <div class="body">
+      <p>A known trap. Tall content needs to be inside a <code>&lt;ScrollView&gt;</code> or it
+      is simply clipped — the page won't scroll to reveal it. See <code>app/get-app.tsx</code>
+      for the fix in context.</p>
+    </div>
+  </details>
+
+  <h3>The undo button for everything</h3>
+  <p>Your project uses Git, which remembers every saved version. If you're lost:</p>
+  <div class="code">
+    <div class="cap"><span>Throw away changes to one file</span><button class="copy">Copy</button></div>
+<pre>git checkout -- src/data/contentPages.ts</pre>
+  </div>
+  <div class="code">
+    <div class="cap"><span>See what you've changed, before undoing anything</span><button class="copy">Copy</button></div>
+<pre>git status
+git diff</pre>
+  </div>
+  <div class="warn">
+    <p><b>Careful:</b> <code class="inline">git checkout --</code> permanently discards your
+    unsaved edits to that file. Run <code class="inline">git diff</code> first to see what
+    you'd be throwing away.</p>
+  </div>
+</section>
+
+<!-- ================= CHECKLIST ================= -->
+<section id="checklist">
+  <h2>11 · Before you call it finished</h2>
+  <p>Work through this every time. Your ticks are saved in this browser.</p>
+
+  <div class="card">
+    <ul class="check" id="check">
+      <li><label><input type="checkbox"><span>The page looks right in the browser</span></label></li>
+      <li><label><input type="checkbox"><span>I made the browser window narrow to check phone layout</span></label></li>
+      <li><label><input type="checkbox"><span><code>npm run typecheck</code> printed no errors</span></label></li>
+      <li><label><input type="checkbox"><span><code>npm run build:web</code> finished successfully</span></label></li>
+      <li><label><input type="checkbox"><span>No red errors in the browser console (<kbd>F12</kbd>)</span></label></li>
+      <li><label><input type="checkbox"><span>Every link I added actually opens something</span></label></li>
+      <li><label><input type="checkbox"><span>I didn't add any claim that isn't true</span></label></li>
+      <li><label><input type="checkbox"><span>I saved my work with <code>git commit</code></span></label></li>
+    </ul>
+    <div class="prog"><i id="progBar"></i></div>
+    <div style="font-size:13px;color:var(--faint)" id="progTxt">0 of 8 done</div>
+  </div>
+
+  <div class="code">
+    <div class="cap"><span>Saving your work</span><button class="copy">Copy</button></div>
+<pre>git add -A
+git commit -m "Describe what you changed"</pre>
+  </div>
+  <p>Commit often — small, frequent saves are far easier to undo than one enormous one.</p>
+</section>
+
+<!-- ================= GLOSSARY ================= -->
+<section id="glossary">
+  <h2>12 · Glossary</h2>
+  <div class="tw"><table>
+    <tr><th>Word</th><th>Meaning</th></tr>
+    <tr><td>Component</td><td>A reusable piece of interface. A function that returns what to show.</td></tr>
+    <tr><td>Prop</td><td>An input passed to a component, like a function argument.</td></tr>
+    <tr><td>State</td><td>A value a component remembers and can change, causing a re-draw.</td></tr>
+    <tr><td>JSX</td><td>The HTML-looking syntax inside JavaScript.</td></tr>
+    <tr><td>TypeScript</td><td>JavaScript that checks types before running, catching typos early.</td></tr>
+    <tr><td>npm</td><td>The package manager. Python's <code>pip</code>.</td></tr>
+    <tr><td>Token</td><td>A named design value, e.g. <code>color.accent</code>.</td></tr>
+    <tr><td>Route</td><td>A web address, created here by adding a file in <code>app/</code>.</td></tr>
+    <tr><td>Build</td><td>Turning source code into the finished site in <code>dist/</code>.</td></tr>
+    <tr><td>Git commit</td><td>A saved checkpoint you can return to.</td></tr>
+    <tr><td>Console</td><td>The browser's error panel. Open with <kbd>F12</kbd>.</td></tr>
+    <tr><td>Flexbox</td><td>The system for arranging items in rows and columns.</td></tr>
+  </table></div>
+</section>
+
+<!-- ================= NEXT ================= -->
+<section id="next">
+  <h2>13 · Where to go next</h2>
+  <p>You don't need to learn everything. In rough order of usefulness for this project:</p>
+  <ol>
+    <li><b>JavaScript basics</b> — variables, functions, arrays, objects.
+      You'll recognise most of it from Python.
+      <a href="https://javascript.info" target="_blank" rel="noopener">javascript.info</a></li>
+    <li><b>React basics</b> — components, props, state.
+      <a href="https://react.dev/learn" target="_blank" rel="noopener">react.dev/learn</a></li>
+    <li><b>Flexbox</b> — you've already used it above.
+      <a href="https://reactnative.dev/docs/flexbox" target="_blank" rel="noopener">reactnative.dev/docs/flexbox</a></li>
+    <li><b>Expo</b> — only when you need it, and read the
+      <a href="https://docs.expo.dev/versions/v57.0.0/" target="_blank" rel="noopener">version 57 docs</a>
+      specifically. Older tutorials will not match this project.</li>
+  </ol>
+
+  <div class="note">
+    <p><b>Using an AI tool instead?</b> Give it the file
+    <code class="inline">INSTRUCTIONS.md</code> in this project folder. It contains everything
+    an AI assistant needs — the architecture, the conventions, the traps, and the honesty
+    rules — written for exactly that purpose.</p>
+  </div>
+
+  <h3>Honest advice</h3>
+  <p>The fastest way to learn this codebase is to <b>change something small and see what
+  happens</b>. Change a colour. Change a heading. Break something on purpose and read the
+  error. You have Git, so nothing you do is permanent. That loop — change, look, understand —
+  is how every developer actually learns.</p>
+
+  <p class="foot">Good luck with the project.<br>
+  <span style="font-size:12.5px">Companion file: <code>INSTRUCTIONS.md</code> (for AI tools) ·
+  This guide: <code>GUIDE.html</code> (for you)</span></p>
+</section>
+
+</main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- copy buttons ---------- */
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var pre = btn.closest('.code').querySelector('pre');
+      var text = pre.innerText;
+      var done = function(){
+        btn.textContent = 'Copied'; btn.classList.add('done');
+        setTimeout(function(){ btn.textContent='Copy'; btn.classList.remove('done'); }, 1400);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function(){});
+      } else {
+        var ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta);
+        ta.select(); try{document.execCommand('copy'); done();}catch(e){} document.body.removeChild(ta);
+      }
+    });
+  });
+
+  /* ---------- sidebar scrollspy ---------- */
+  var links = [].slice.call(document.querySelectorAll('nav.side a'));
+  var secs  = links.map(function(a){ return document.querySelector(a.getAttribute('href')); })
+                   .filter(Boolean);
+  function spy(){
+    var y = window.scrollY + 110, cur = 0;
+    secs.forEach(function(s,i){ if(s && s.offsetTop <= y) cur = i; });
+    links.forEach(function(a,i){ a.classList.toggle('on', i===cur); });
+  }
+  window.addEventListener('scroll', spy, {passive:true}); spy();
+
+  /* ---------- RN vs HTML toggle ---------- */
+  var RN = {
+    rn: {
+      cap: 'React Native — correct',
+      code: "import { View, Text } from 'react-native';\n\n<View style={{ padding: 20, backgroundColor: '#eee' }}>\n  <Text style={{ fontSize: 16 }}>Hello</Text>\n</View>",
+      note: "<b>Note the differences:</b> <code class='inline'>View</code> instead of <code class='inline'>div</code>, <code class='inline'>Text</code> instead of <code class='inline'>p</code>, and <code class='inline'>20</code> as a plain number rather than the string <code class='inline'>'20px'</code>."
+    },
+    html: {
+      cap: 'Plain HTML — will NOT work in this project',
+      code: "<div style=\"padding: 20px; background: #eee;\">\n  <p style=\"font-size: 16px;\">Hello</p>\n</div>",
+      note: "<b>Why this fails here:</b> there is no <code class='inline'>div</code> or <code class='inline'>p</code> in React Native, and sizes must be numbers, not strings like <code class='inline'>'20px'</code>. Tutorials written for normal websites give you this — it won't run."
+    }
+  };
+  var seg = document.getElementById('rnSeg');
+  if (seg) seg.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    seg.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x===b); });
+    var d = RN[b.dataset.v];
+    document.getElementById('rnCap').textContent = d.cap;
+    document.getElementById('rnCode').textContent = d.code;
+    document.getElementById('rnNote').innerHTML = d.note;
+  });
+
+  /* ---------- quizzes ---------- */
+  document.querySelectorAll('.quiz').forEach(function(q){
+    var correct = parseInt(q.dataset.answer,10);
+    var opts = [].slice.call(q.querySelectorAll('.opt'));
+    var fb = q.querySelector('.fb');
+    var msgs = {
+      1:{good:'Correct. A bare word inside a View has no Text around it, so it throws.',
+         bad:'Not quite — that one is fine. Look for the option with no &lt;Text&gt; wrapper.'},
+      2:{good:'Correct. Quotes around both values and a comma between them.',
+         bad:'Look again at the quotes and commas — one option has all of them right.'}
+    };
+    var idx = [].slice.call(document.querySelectorAll('.quiz')).indexOf(q) + 1;
+    opts.forEach(function(o,i){
+      o.addEventListener('click', function(){
+        if (q.dataset.done) return;
+        q.dataset.done = '1';
+        var ok = (i === correct);
+        o.classList.add(ok ? 'right' : 'wrong');
+        if (!ok) opts[correct].classList.add('right');
+        var m = msgs[idx] || {good:'Correct.', bad:'The right answer is highlighted.'};
+        fb.innerHTML = ok ? m.good : m.bad;
+        fb.className = 'fb show ' + (ok ? 'good' : 'bad');
+      });
+    });
+  });
+
+  /* ---------- file tree ---------- */
+  var FILES = {
+    index:{t:'app/index.tsx', d:'The homepage. It stacks the section components (Hero, Reality, Pricing…) in order. To reorder the homepage, move lines here. To change words, edit the section file itself.', e:true},
+    getapp:{t:'app/get-app.tsx', d:'The 3D QR-code tree page. The most complex file in the project — it uses WebGL. Read it, but change it carefully.', e:false},
+    layout:{t:'app/_layout.tsx', d:'Wraps every page. Loads the fonts. You rarely need to touch this.', e:false},
+    slug:{t:'app/legal/[slug].tsx', d:'Square brackets mean one file serves many addresses — terms-of-service, privacy-policy and so on. The words live in src/data/contentPages.ts.', e:false},
+    tokens:{t:'src/theme/tokens.ts', d:'Every colour, font, corner radius and shadow. Change a value here and it updates across the whole site. A great first file to experiment with.', e:true},
+    content:{t:'src/data/contentPages.ts', d:'All the words for legal, resources, company, support and solutions pages. Safe and easy to edit — this is where most text changes belong.', e:true},
+    data:{t:'src/data.ts', d:'Homepage content: the example orders, product categories, pricing feature lists and footer link columns.', e:true},
+    company:{t:'src/config/company.ts', d:'Business facts nobody has confirmed yet — support email, hours, office, open roles. Each has a true/false switch. While false, the site hides the claim rather than stating it.', e:true},
+    releases:{t:'src/releases.ts', d:'Whether each download actually exists. All false right now, so the site shows "Soon" instead of a link that would 404.', e:true},
+    sections:{t:'src/sections/', d:'One file per homepage block, named after what it shows — Hero, Pricing, SiteFooter. To change a homepage section, this is where you go.', e:true},
+    components:{t:'src/components/', d:'Reusable pieces shared across pages: Button, ContentPage, Reveal, the chatbot. Changing one affects everywhere it is used.', e:false},
+    nm:{t:'node_modules/', d:'Downloaded libraries. Never edit, never commit. If it misbehaves, delete the folder and run npm install again.', e:false},
+    dist:{t:'dist/', d:'The generated finished website. Rebuilt from scratch by npm run build:web, so any edit here is erased.', e:false}
+  };
+  var info = document.getElementById('fileInfo');
+  var tree = document.getElementById('tree');
+  if (tree) tree.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    var f = FILES[b.dataset.k]; if(!f) return;
+    var tag = f.e
+      ? '<span style="color:var(--ok);font-weight:600">✓ Safe to edit</span>'
+      : '<span style="color:var(--warn);font-weight:600">⚠ Read before changing</span>';
+    info.innerHTML = '<b>'+f.t+'</b>'+f.d+'<div style="margin-top:8px">'+tag+'</div>';
+    info.classList.add('show');
+  });
+
+  /* ---------- colour swatches ---------- */
+  var TOKENS = [
+    ['color.ink','#0B0D12','Dark surfaces, headings on light backgrounds'],
+    ['color.paper','#F7F6F3','The main off-white page background'],
+    ['color.accent','#2B4CF2','Brand blue — buttons, links, highlights'],
+    ['color.accentLight','#6E85FF','Blue on dark backgrounds'],
+    ['color.text','#0B0D12','Default body text'],
+    ['color.textMuted','#5C6273','Secondary, less important text'],
+    ['color.textFaint','#8A8F9E','Captions and small labels'],
+    ['color.success','#0B7A5A','Positive states'],
+    ['color.caution','#8A5A12','Warnings'],
+    ['color.danger','#B4451A','Errors and losses']
+  ];
+  var swWrap = document.getElementById('sw');
+  var info2 = document.getElementById('fileInfo2');
+  if (swWrap) {
+    TOKENS.forEach(function(t){
+      var b = document.createElement('button');
+      b.innerHTML = '<div class="chip" style="background:'+t[1]+'"></div>'+
+                    '<div class="nm">'+t[0]+'</div><div class="hx">'+t[1]+'</div>';
+      b.addEventListener('click', function(){
+        info2.innerHTML = '<b style="font-family:var(--mono);display:block;margin-bottom:4px">'+
+          t[0]+'</b>'+t[2]+
+          '<div style="margin-top:9px;font-family:var(--mono);font-size:12.5px;color:var(--muted)">'+
+          'Use it: style={{ color: '+t[0]+' }}</div>';
+        info2.style.display='block';
+      });
+      swWrap.appendChild(b);
+    });
+  }
+
+  /* ---------- flexbox playground ---------- */
+  var stage=document.getElementById('stage');
+  var state={flexDirection:'row',justifyContent:'flex-start',alignItems:'stretch',gap:10};
+  function paint(){
+    if(!stage) return;
+    stage.style.flexDirection=state.flexDirection;
+    stage.style.justifyContent=state.justifyContent;
+    stage.style.alignItems=state.alignItems;
+    stage.style.gap=state.gap+'px';
+    document.getElementById('flexCode').textContent =
+      '<View style={{\n'+
+      "  flexDirection: '"+state.flexDirection+"',\n"+
+      "  justifyContent: '"+state.justifyContent+"',\n"+
+      "  alignItems: '"+state.alignItems+"',\n"+
+      '  gap: '+state.gap+',\n'+
+      '}}>';
+  }
+  function wire(id,key){
+    var el=document.getElementById(id); if(!el) return;
+    el.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      el.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});
+      state[key]=b.dataset.v; paint();
+    });
+  }
+  wire('fdSeg','flexDirection'); wire('jcSeg','justifyContent'); wire('aiSeg','alignItems');
+  var gr=document.getElementById('gapR');
+  if(gr) gr.addEventListener('input',function(){
+    state.gap=+gr.value; document.getElementById('gapO').textContent=gr.value; paint();
+  });
+  paint();
+
+  /* ---------- checklist with saved progress ---------- */
+  var KEY='vendly-guide-checklist';
+  var boxes=[].slice.call(document.querySelectorAll('#check input'));
+  var saved=[];
+  try{ saved=JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ saved=[]; }
+  function sync(){
+    var n=boxes.filter(function(b){return b.checked;}).length;
+    var bar=document.getElementById('progBar');
+    var txt=document.getElementById('progTxt');
+    if(bar) bar.style.width=(n/boxes.length*100)+'%';
+    if(txt) txt.textContent = n===boxes.length
+      ? 'All done — ready to commit.'
+      : n+' of '+boxes.length+' done';
+    try{ localStorage.setItem(KEY, JSON.stringify(
+      boxes.map(function(b){return b.checked;}))); }catch(e){}
+  }
+  boxes.forEach(function(b,i){
+    if(saved[i]) b.checked=true;
+    b.addEventListener('change', sync);
+  });
+  sync();
+})();
+</script>
+</body>
+</html>
