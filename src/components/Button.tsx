@@ -43,6 +43,7 @@ export function Button({
   arrow = false,
   play = false,
   block = false,
+  disabled = false,
   style,
 }: {
   label: string;
@@ -52,6 +53,9 @@ export function Button({
   arrow?: boolean;
   play?: boolean;
   block?: boolean;
+  /** Renders dimmed and inert, and stops the hover lift — used where a
+      feature is genuinely not available yet rather than merely failing. */
+  disabled?: boolean;
   style?: ViewStyle;
 }) {
   const { value, handlers } = useHover();
@@ -100,15 +104,23 @@ export function Button({
   const weight = variant === 'ghostInk' && size === 'base' ? font.bodyMedium : font.bodySemi;
 
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" {...handlers} style={style}>
+    <Pressable
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      {...(disabled ? {} : handlers)}
+      style={style}
+    >
       <Animated.View
         style={[
           base,
           skin[variant],
           {
             backgroundColor: variant === 'plain' ? 'transparent' : hoverBg,
+            opacity: disabled ? 0.5 : 1,
             transform: [
-              { translateY: value.interpolate({ inputRange: [0, 1], outputRange: [0, -2] }) },
+              { translateY: disabled ? 0 : value.interpolate({ inputRange: [0, 1], outputRange: [0, -2] }) },
             ],
             ...(play ? { paddingLeft: 16, paddingRight: 22, paddingVertical: 15 } : null),
           },

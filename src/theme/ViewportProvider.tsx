@@ -1,9 +1,29 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 
 type Size = { width: number; height: number };
 
 const ViewportContext = createContext<Size | null>(null);
+
+/**
+ * The viewport both the static export and the first client render assume.
+ *
+ * Static rendering runs in Node, where react-native-web's Dimensions has no
+ * DOM to measure and reports 0x0 — every `clamp()` collapses to its minimum
+ * and the whole page is emitted in its mobile composition. Seeding from the
+ * real window on the client then produced different markup than the server
+ * had sent, which is React hydration error #418.
+ *
+ * Both sides now start from this fixed desktop size, so the HTML that ships
+ * to crawlers is the desktop layout and the first client render matches it
+ * exactly. The real size is adopted in a layout effect below, before the
+ * browser paints, so there is no visible snap.
+ */
+const SSR_VIEWPORT: Size = { width: 1280, height: 800 };
+
+/** `useLayoutEffect` warns when run during server rendering; there is no
+    layout to read there anyway, so it degrades to `useEffect`. */
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 /**
  * Measures the app root and publishes its size.
@@ -23,9 +43,9 @@ const ViewportContext = createContext<Size | null>(null);
  */
 export function ViewportProvider({ children }: { children: React.ReactNode }) {
   const window = useWindowDimensions();
-  const [size, setSize] = useState<Size>({ width: window.width, height: window.height });
+  const [size, setSize] = useState<Size>(SSR_VIEWPORT);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (window.width <= 0 || window.height <= 0) return;
     setSize((prev) =>
       Math.abs(prev.width - window.width) > 0.5 || Math.abs(prev.height - window.height) > 0.5
@@ -52,10 +72,12 @@ export function ViewportProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Falls back to the window size when rendered outside a provider. */
+/** Falls back to the window size when rendered outside a provider, and to the
+    shared SSR size when there is no DOM to measure at all. */
 export function useViewportSize(): Size {
   const measured = useContext(ViewportContext);
   const window = useWindowDimensions();
   if (measured && measured.width > 0) return measured;
-  return { width: window.width, height: window.height };
+  if (window.width > 0) return { width: window.width, height: window.height };
+  return SSR_VIEWPORT;
 }

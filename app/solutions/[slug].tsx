@@ -135,3 +135,12 @@ function PreviewRow({ label, value }: { label: string; value: string }) {
     </View>
   );
 }
+
+/**
+ * Pre-renders one HTML file per slug at export time. Without this the
+ * static build emits a single literal `[slug].html`, so every one of
+ * these pages would ship with no crawlable markup of its own.
+ */
+export async function generateStaticParams(): Promise<Record<string, string>[]> {
+  return ['food-beverages', 'fashion-apparel', 'beauty-health', 'electronics', 'home-lifestyle', 'general-retail'].map((slug) => ({ slug }));
+}

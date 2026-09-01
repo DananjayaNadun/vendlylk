@@ -3,6 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { ScrollProvider, useScroll } from '@/scroll/ScrollProvider';
 import { color } from '@/theme/tokens';
+import { Seo } from '@/components/Seo';
 
 import { SiteNav } from '@/sections/SiteNav';
 import { Hero } from '@/sections/Hero';
@@ -27,6 +28,7 @@ export default function Page() {
 
   return (
     <ScrollProvider scrollRef={scrollRef}>
+      <Seo />
       <StatusBar style="light" />
       <PageBody scrollRef={scrollRef} />
     </ScrollProvider>

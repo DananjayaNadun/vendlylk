@@ -5,24 +5,17 @@ import { Button } from '@/components/Button';
 import { AndroidIcon, AppleIcon, WindowsIcon } from '@/components/icons';
 import { metrics } from '@/components/Type';
 import { color, font, radius } from '@/theme/tokens';
-
-/* GitHub's "latest" release permalink: this exact URL always redirects to
-   whichever asset with this filename is attached to the most recently
-   published release, so it never needs updating as new versions ship.
-   Requires a release with an asset literally named Vendly-Setup.exe /
-   Vendly.dmg — until one exists, the link 404s rather than lying about a
-   version being available. */
-const WINDOWS_URL = 'https://github.com/DananjayaNadun/vendlylk/releases/latest/download/Vendly-Setup.exe';
-const MAC_URL = 'https://github.com/DananjayaNadun/vendlylk/releases/latest/download/Vendly.dmg';
+import { releases } from '@/releases';
 
 /**
  * The hero's primary CTA — "Download", opening a small popup underneath with
  * the platform choices, rather than linking straight to a signup page.
- * Windows and Mac fetch the installer directly; Android/iOS has no single
- * file to hand over, so it goes to a page with a QR code for each store
- * instead. Closes on picking an option or clicking anywhere else on the
- * page, the same click-outside pattern used by the auth pages' time-of-day
- * picker.
+ * Windows and Mac fetch the installer directly once released; Android/iOS
+ * has no single file to hand over, so it goes to /get-app instead. Platforms
+ * that have not shipped yet are listed but marked "Soon" and are not
+ * pressable, rather than handing over a link that 404s — see src/releases.ts.
+ * Closes on picking an option or clicking anywhere else on the page, the same
+ * click-outside pattern used by the auth pages' time-of-day picker.
  */
 export function DownloadButton() {
   const [open, setOpen] = useState(false);
@@ -84,27 +77,32 @@ export function DownloadButton() {
           <DownloadOption
             label="Download for Windows"
             icon={<WindowsIcon size={16} />}
+            available={releases.windows.available}
             onPress={() => {
               setOpen(false);
-              Linking.openURL(WINDOWS_URL);
+              Linking.openURL(releases.windows.url);
             }}
           />
           <DownloadOption
             label="Download for Mac"
             icon={<AppleIcon size={16} />}
+            available={releases.mac.available}
             onPress={() => {
               setOpen(false);
-              Linking.openURL(MAC_URL);
+              Linking.openURL(releases.mac.url);
             }}
           />
+          {/* Always live: /get-app explains where each mobile build stands,
+              so it stays useful before the stores approve the listings. */}
           <DownloadOption
-            label="Download for Android/iOS"
+            label="Android / iPhone"
             icon={
               <View style={{ flexDirection: 'row', gap: 3 }}>
                 <AndroidIcon size={15} />
                 <AppleIcon size={15} />
               </View>
             }
+            available
             onPress={() => {
               setOpen(false);
               router.push('/get-app');
@@ -119,19 +117,24 @@ export function DownloadButton() {
 function DownloadOption({
   label,
   icon,
+  available,
   onPress,
 }: {
   label: string;
   icon: React.ReactNode;
+  available: boolean;
   onPress: () => void;
 }) {
   const [hover, setHover] = useState(false);
   return (
     <Pressable
-      onPress={onPress}
+      onPress={available ? onPress : undefined}
+      disabled={!available}
       onHoverIn={() => setHover(true)}
       onHoverOut={() => setHover(false)}
       accessibilityRole="button"
+      accessibilityState={{ disabled: !available }}
+      accessibilityLabel={available ? label : `${label} — not released yet`}
     >
       <View
         style={{
@@ -142,13 +145,26 @@ function DownloadOption({
           paddingHorizontal: 14,
           marginHorizontal: 6,
           borderRadius: 8,
-          backgroundColor: hover ? 'rgba(11,13,18,0.05)' : 'transparent',
+          backgroundColor: hover && available ? 'rgba(11,13,18,0.05)' : 'transparent',
+          opacity: available ? 1 : 0.55,
         }}
       >
         {icon}
-        <Text style={[{ fontFamily: font.bodyMedium, color: color.ink }, metrics(13.5, 1.3)]}>
+        <Text
+          style={[{ fontFamily: font.bodyMedium, color: color.ink, flex: 1 }, metrics(13.5, 1.3)]}
+        >
           {label}
         </Text>
+        {available ? null : (
+          <Text
+            style={[
+              { fontFamily: font.mono, color: color.textFaint, textTransform: 'uppercase' },
+              metrics(9.5, 1.3, 0.1),
+            ]}
+          >
+            Soon
+          </Text>
+        )}
       </View>
     </Pressable>
   );

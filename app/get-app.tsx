@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, Pressable, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { brand } from '@/assets';
@@ -8,13 +8,14 @@ import { AndroidIcon, AppleIcon } from '@/components/icons';
 import { metrics } from '@/components/Type';
 import { color, font, radius, shadow } from '@/theme/tokens';
 import { useViewport } from '@/theme/responsive';
+import { releases } from '@/releases';
+import { Seo } from '@/components/Seo';
 
-/* TODO: swap for the real listings once each store approves the app. The
-   Play Store URL already matches this project's real package id
-   (lk.vendly.app, set in app.json); the App Store URL needs the numeric
-   app id Apple assigns on submission. */
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=lk.vendly.app';
-const APP_STORE_URL = 'https://apps.apple.com/lk/app/vendly-lk/id0000000000';
+/* Store targets and whether each listing is actually live come from one
+   place, so this page can say plainly that a build is not out yet instead
+   of encoding a QR that resolves to a 404. */
+const PLAY_STORE_URL = releases.android.url;
+const APP_STORE_URL = releases.ios.url;
 
 const CREAM = '#F3EFE5';
 const INK = '#171A21';
@@ -37,10 +38,23 @@ const SWATCHES = ['#F3B6CE', '#B48CD6', '#E1483A', '#F0B429', '#3E7BE0', '#D8E4E
 export default function GetAppScreen() {
   const router = useRouter();
   const { isMobile, gutter } = useViewport();
+  const anyLive = releases.android.available || releases.ios.available;
 
   return (
     <View style={{ flex: 1, backgroundColor: CREAM }}>
-      <View style={{ flex: 1 }}>
+      <Seo
+        title="Get the app"
+        description="Install Vendly.lk on Android or iPhone — scan the code to open the store listing for your phone."
+      />
+      {/* The two trees plus their controls are taller than a laptop viewport,
+          and react-native-web pins `body { overflow: hidden }` — without a
+          scroller the URL field, season tabs and colour swatches sat below
+          the fold with no way to reach them. */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ minHeight: '100%' }}
+        showsVerticalScrollIndicator
+      >
         <Pressable
           onPress={() => router.push('/')}
           accessibilityRole="link"
@@ -76,6 +90,7 @@ export default function GetAppScreen() {
             storeLabel="Google Play"
             defaultUrl={PLAY_STORE_URL}
             isMobile={isMobile}
+            available={releases.android.available}
             Icon={AndroidIcon}
           />
           <TreeCard
@@ -83,6 +98,7 @@ export default function GetAppScreen() {
             storeLabel="App Store"
             defaultUrl={APP_STORE_URL}
             isMobile={isMobile}
+            available={releases.ios.available}
             Icon={AppleIcon}
           />
         </View>
@@ -132,12 +148,13 @@ export default function GetAppScreen() {
                 metrics(13.5, 1.55),
               ]}
             >
-              Scan a code below with your phone's camera to install the app — orders, storefront and
-              inventory, wherever you're standing. Tap either one first to watch it grow.
+              {anyLive
+                ? "Scan a code below with your phone's camera to install the app — orders, storefront and inventory, wherever you're standing. Tap either one first to watch it grow."
+                : "Neither store listing is live yet. The codes below already point at the pages the app will occupy, so they will start working the day each build is approved — tap a tree to watch it fold into its code."}
             </Text>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -147,12 +164,14 @@ function TreeCard({
   storeLabel,
   defaultUrl,
   isMobile,
+  available,
   Icon,
 }: {
   platformLabel: string;
   storeLabel: string;
   defaultUrl: string;
   isMobile: boolean;
+  available: boolean;
   Icon: React.ComponentType<{ size?: number }>;
 }) {
   const [season, setSeason] = useState<SeasonKey>('spring');
@@ -202,6 +221,14 @@ function TreeCard({
       >
         <Icon size={17} />
         <Text style={[{ fontFamily: font.bodySemi, color: INK }, metrics(13.5, 1.3)]}>{platformLabel}</Text>
+        <Text
+          style={[
+            { fontFamily: font.mono, color: available ? '#2F7D4F' : '#8A8578', textTransform: 'uppercase' },
+            metrics(9.5, 1.3, 0.1),
+          ]}
+        >
+          {available ? `On ${storeLabel}` : 'Coming soon'}
+        </Text>
       </View>
 
       <View style={{ alignItems: 'center' }}>

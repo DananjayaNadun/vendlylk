@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Expo Router's development route listing — not useful to searchers.
+Disallow: /_sitemap
+
+Sitemap: https://vendly.lk/sitemap.xml

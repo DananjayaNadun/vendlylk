@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://vendly.lk/</loc><priority>1.0</priority></url>
+  <url><loc>https://vendly.lk/get-app</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/legal/terms-of-service</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/legal/privacy-policy</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/legal/cookie-policy</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/legal/data-protection</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/resources/help-centre</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/resources/documentation</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/resources/guides</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/resources/faq</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/company/about</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/company/contact</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/company/careers</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/company/partners</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/support/help</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/support/contact-support</loc><priority>0.6</priority></url>
+  <url><loc>https://vendly.lk/solutions/food-beverages</loc><priority>0.8</priority></url>
+  <url><loc>https://vendly.lk/solutions/fashion-apparel</loc><priority>0.8</priority></url>
+  <url><loc>https://vendly.lk/solutions/beauty-health</loc><priority>0.8</priority></url>
+  <url><loc>https://vendly.lk/solutions/electronics</loc><priority>0.8</priority></url>
+  <url><loc>https://vendly.lk/solutions/home-lifestyle</loc><priority>0.8</priority></url>
+  <url><loc>https://vendly.lk/solutions/general-retail</loc><priority>0.8</priority></url>
+</urlset>

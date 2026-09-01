@@ -27,7 +27,7 @@ const META: Record<string, { eyebrow: string; title: string; lede: string }> = {
   partners: {
     eyebrow: 'Company',
     title: 'Partners',
-    lede: 'How courier, payment and business-tool partners connect to a Vendly account.',
+    lede: 'The integrations Vendly is built around, and how to connect a service to it.',
   },
 };
 
@@ -55,9 +55,11 @@ export default function CompanySlugScreen() {
 
       {key === 'contact' && (
         <>
-          <Reveal index={0} style={{ marginBottom: 32 }}>
-            <CardGrid items={contactChannels} minItemWidth={220} />
-          </Reveal>
+          {contactChannels.length > 0 ? (
+            <Reveal index={0} style={{ marginBottom: 32 }}>
+              <CardGrid items={contactChannels} minItemWidth={220} />
+            </Reveal>
+          ) : null}
           <Reveal index={1} style={{ maxWidth: 620 }}>
             <ContactForm submitLabel="Send message" />
           </Reveal>
@@ -66,12 +68,24 @@ export default function CompanySlugScreen() {
 
       {key === 'careers' && (
         <>
-          <Reveal index={0} style={{ marginBottom: 32 }}>
-            <CardGrid items={careersRoles} minItemWidth={280} />
-          </Reveal>
+          {careersRoles.length > 0 ? (
+            <Reveal index={0} style={{ marginBottom: 32 }}>
+              <CardGrid items={careersRoles} minItemWidth={280} />
+            </Reveal>
+          ) : (
+            <Reveal index={0} style={{ maxWidth: 560, marginBottom: 24 }}>
+              <Text style={[{ fontFamily: font.displaySemi, color: color.ink, marginBottom: 8 }, metrics(18, 1.3)]}>
+                No open roles right now.
+              </Text>
+              <Text style={[{ fontFamily: font.body, color: color.textMuted }, metrics(14.5, 1.6)]}>
+                We are not hiring for a specific position at the moment. When that changes, the role will be
+                listed on this page.
+              </Text>
+            </Reveal>
+          )}
           <Reveal index={1} style={{ maxWidth: 560 }}>
             <Text style={[{ fontFamily: font.body, color: color.textMuted }, metrics(14.5, 1.6)]}>
-              Don't see a fit but think you'd be a good addition anyway? Reach out through the{' '}
+              Think you'd be a good addition anyway? Reach out through the{' '}
               <Text style={{ fontFamily: font.bodySemi, color: color.accent }}>contact page</Text> and tell us
               what you'd want to work on.
             </Text>
@@ -96,4 +110,13 @@ export default function CompanySlugScreen() {
       )}
     </ContentPage>
   );
+}
+
+/**
+ * Pre-renders one HTML file per slug at export time. Without this the
+ * static build emits a single literal `[slug].html`, so every one of
+ * these pages would ship with no crawlable markup of its own.
+ */
+export async function generateStaticParams(): Promise<Record<string, string>[]> {
+  return ['about', 'contact', 'careers', 'partners'].map((slug) => ({ slug }));
 }

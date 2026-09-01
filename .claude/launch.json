@@ -3,14 +3,22 @@
   "configurations": [
     {
       "name": "vendly-dist",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "4174", "-d", "dist"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "serve-dist.js"
+      ],
       "port": 4174
     },
     {
       "name": "vendly-web",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["expo", "start", "--web", "--port", "8090"],
+      "runtimeArgs": [
+        "expo",
+        "start",
+        "--web",
+        "--port",
+        "8090"
+      ],
       "port": 8090
     }
   ]

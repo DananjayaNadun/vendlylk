@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { Animated, Easing, Pressable, Text, TextInput, View } from 'react-native';
+import { Animated, Easing, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AutoGrid } from './Layout';
 import { Panel } from './UI';
 import { metrics } from './Type';
 import { color, font, radius, shadow } from '@/theme/tokens';
 import { useViewport } from '@/theme/responsive';
+import { company } from '@/config/company';
 
 /** A titled card on a wash background — help topics, docs, guides, careers, partners. */
 export function InfoCard({
@@ -157,9 +158,15 @@ export function Accordion({ items }: { items: { q: string; a: string }[] }) {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-/** Name + email + message, with inline validation and a confirmation state —
-    there is no backend behind this yet, so submitting just resolves locally,
-    the same tradeoff GrowFooter's email capture makes. */
+/**
+ * Name + email + message.
+ *
+ * There is no backend to post to, so this hands the message to the visitor's
+ * own mail client with everything pre-filled rather than showing a "message
+ * sent" confirmation for a request that was never transmitted. When no
+ * support mailbox has been confirmed there is nowhere to send it at all, and
+ * the form says so instead of collecting details that would go nowhere.
+ */
 export function ContactForm({
   submitLabel = 'Send message',
   messageLabel = 'Message',
@@ -174,7 +181,23 @@ export function ContactForm({
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const [handedOff, setHandedOff] = useState(false);
+
+  const mailbox = company.supportEmail.confirmed ? company.supportEmail.value : null;
+
+  if (!mailbox) {
+    return (
+      <Panel style={{ padding: 22 }}>
+        <Text style={[{ fontFamily: font.displaySemi, color: color.ink, marginBottom: 6 }, metrics(17, 1.3)]}>
+          Contact channels open at launch
+        </Text>
+        <Text style={[{ fontFamily: font.body, color: color.textMuted }, metrics(14.5, 1.6)]}>
+          Vendly is still in build and there is no monitored inbox yet, so there is no form here that would
+          reach anyone. Once support is staffed, the address and hours are published on this page.
+        </Text>
+      </Panel>
+    );
+  }
 
   const submit = () => {
     if (!name.trim() || !message.trim()) {
@@ -186,17 +209,23 @@ export function ContactForm({
       return;
     }
     setError(null);
-    setDone(true);
+    const subject = encodeURIComponent(`Vendly enquiry from ${name.trim()}`);
+    const body = encodeURIComponent(`${message.trim()}
+
+— ${name.trim()} (${email.trim()})`);
+    Linking.openURL(`mailto:${mailbox}?subject=${subject}&body=${body}`);
+    setHandedOff(true);
   };
 
-  if (done) {
+  if (handedOff) {
     return (
       <Panel style={{ padding: 26, alignItems: 'flex-start' }}>
         <Text style={[{ fontFamily: font.displaySemi, color: color.ink, marginBottom: 6 }, metrics(18, 1.3)]}>
-          Thanks — message sent.
+          Your email app should be open.
         </Text>
         <Text style={[{ fontFamily: font.body, color: color.textMuted }, metrics(14.5, 1.6)]}>
-          We will reply to {email.trim()} as soon as we can.
+          We have not received anything yet — send the draft to {mailbox} and it reaches us. If nothing
+          opened, email that address directly.
         </Text>
       </Panel>
     );
@@ -235,6 +264,9 @@ export function ContactForm({
           <Text style={[{ fontFamily: font.bodySemi, color: color.white }, metrics(14.5, 1.2)]}>{submitLabel}</Text>
         </View>
       </Pressable>
+      <Text style={[{ fontFamily: font.body, color: color.textFaint, marginTop: 10 }, metrics(12.5, 1.45)]}>
+        Opens a pre-filled draft in your email app — nothing is sent until you send it.
+      </Text>
     </Panel>
   );
 }

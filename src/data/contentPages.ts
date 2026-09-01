@@ -1,3 +1,5 @@
+import { company } from '@/config/company';
+
 /**
  * Copy for every footer/legal destination that isn't an in-page section —
  * legal, resources, company, support and the per-category solution pages.
@@ -46,7 +48,7 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: '5. Plans, billing and cancellation',
         body: [
-          'Starter and Growth are billed as described at signup. You can cancel at any time; your storefront and order history stay exportable for 30 days after cancellation, then are deleted.',
+          'Starter is free. Growth pricing is published before it is charged, and no account is billed without agreeing to a price first. You can cancel at any time, and your storefront and order history stay exportable for a defined window after cancellation before deletion.',
           'We may suspend an account that is used to break these terms, after trying to reach you about it first, except where the activity is causing active harm.',
         ],
       },
@@ -88,7 +90,7 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: '4. Where it is stored',
         body: [
-          'Data is stored on infrastructure serving the South Asia region, with backups kept encrypted. Access is limited to the systems and staff that need it to keep the product running.',
+          'Access to production data is limited to the systems and people that need it to keep the product running. The hosting region is published here once the production environment is finalised.',
         ],
       },
       {
@@ -105,38 +107,32 @@ export const legalPages: Record<string, LegalPage> = {
   },
   'cookie-policy': {
     title: 'Cookie Policy',
-    updated: '1 August 2026',
+    updated: '1 September 2026',
     intro:
-      'Vendly.lk uses a small number of cookies and local-storage entries to keep the marketing site and product working. This page lists what they do.',
+      'What Vendly.lk stores in your browser. Today the answer is nothing — this page says so plainly rather than describing cookies the site does not set.',
     sections: [
       {
-        heading: '1. Strictly necessary',
+        heading: '1. What this site stores today',
         body: [
-          'Session cookies that keep you signed in to your Vendly account, and a cookie that remembers you have seen this notice. These cannot be switched off, since the product does not work without them.',
+          'Nothing. The vendly.lk marketing site sets no cookies, writes no local storage, and loads no third-party analytics, advertising or tracking scripts. There is no consent banner because there is nothing to consent to.',
         ],
       },
       {
-        heading: '2. Preferences',
+        heading: '2. What the product will need',
         body: [
-          'Local storage that remembers small choices — like which currency and locale you picked on this marketing site, or the last screen you had open in the product.',
+          'Once accounts go live, signing in will require a strictly necessary session cookie — without it the product cannot tell one signed-in seller from another. That is the only category we consider unavoidable.',
         ],
       },
       {
-        heading: '3. Analytics',
+        heading: '3. What we intend to avoid',
         body: [
-          'Aggregated, anonymised analytics that tell us which pages and features get used, so we can prioritise what to build next. No individual visitor is identified from this data.',
+          'We do not plan to run third-party advertising cookies or cross-site tracking pixels on Vendly.lk. If that ever changes, this page is updated first and consent is asked for before anything is set.',
         ],
       },
       {
-        heading: '4. What we do not do',
+        heading: '4. Managing cookies',
         body: [
-          'We do not run third-party advertising cookies or cross-site tracking pixels on Vendly.lk.',
-        ],
-      },
-      {
-        heading: '5. Managing cookies',
-        body: [
-          'You can block or delete cookies from your browser settings at any time. Blocking the strictly-necessary ones will sign you out and stop the product from working correctly.',
+          'You can block or delete cookies from your browser settings at any time. Since this site sets none, blocking them changes nothing about how it behaves today.',
         ],
       },
     ],
@@ -150,7 +146,7 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: '1. Encryption',
         body: [
-          'Data is encrypted in transit (TLS) between your device, the storefront and our servers, and encrypted at rest, including backups.',
+          'Vendly is built to keep seller and customer data encrypted in transit between your device, the storefront and our servers, and encrypted where it is stored. The specific configuration in force is confirmed at launch and stated here once it is.',
         ],
       },
       {
@@ -162,7 +158,7 @@ export const legalPages: Record<string, LegalPage> = {
       {
         heading: '3. Data retention',
         body: [
-          'Order, customer and inventory records are kept for as long as your account is active, plus 30 days after cancellation to give you time to export, then deleted on a rolling schedule.',
+          'Order, customer and inventory records are kept for as long as your account is active. After cancellation they stay available for a defined export window before deletion; that window is stated on this page and in your account before the product accepts live customer data.',
         ],
       },
       {
@@ -243,15 +239,17 @@ export const guideList: Guide[] = [
 export type Faq = { q: string; a: string };
 
 export const faqList: Faq[] = [
+  { q: 'What does Vendly cost?', a: 'The Starter plan is free and stays free — storefront, manual orders, customer records, products and inventory, and the AI assistant. Growth adds the operational side (COD Reliability Score, courier workflow, invoices, advanced reports, staff logins); its price is published before anyone is charged.' },
+  { q: 'Is Vendly available yet?', a: 'Not yet — it is still in build. The store listings and desktop installers are not live, and accounts are not open. The Get the app page tracks where each build stands.' },
   { q: 'Do I need a website to use Vendly?', a: 'No. Your storefront is a shareable link you can post in Facebook, WhatsApp or Instagram — most sellers never need a separate website.' },
   { q: 'Can I keep taking orders over WhatsApp and Messenger?', a: 'Yes — that is the point. Vendly sits alongside those chats and turns them into structured, trackable orders instead of replacing how you already talk to customers.' },
   { q: 'What is the COD Reliability Score?', a: 'A score built from delivery outcomes that flags which cash-on-delivery orders are more likely to be refused, so you can call to confirm before you dispatch.' },
   { q: 'How does stock update when I sell across three channels at once?', a: 'Every order — chat, storefront or manual — draws from the same inventory count, so a size that sells out in a WhatsApp chat also disappears from your storefront immediately.' },
-  { q: 'Is my customer and order data private?', a: 'Yes. Your data is yours, encrypted in transit and at rest, and never sold. See the Privacy Policy and Data Protection pages for the details.' },
+  { q: 'Is my customer and order data private?', a: 'Your data is yours and is never sold. How it is stored, who can reach it and how long it is kept are set out on the Privacy Policy and Data Protection pages.' },
   { q: 'Can more than one person use the account?', a: 'On the Growth plan, yes — you can invite staff with their own logins so packing, dispatch and replies do not all fall on one person.' },
-  { q: 'What happens if I cancel?', a: 'Your storefront and history stay exportable for 30 days after cancellation, so you can take your data with you before anything is deleted.' },
-  { q: 'Which couriers does Vendly work with?', a: 'Vendly books and labels through the courier partners connected to your account rather than locking you to one provider — see the Partners page for how that works.' },
-  { q: 'Do you offer support in Sinhala and Tamil?', a: 'Yes — support is available in Sinhala, Tamil and English. See Contact Support for hours and channels.' },
+  { q: 'What happens if I cancel?', a: 'You can export your storefront, orders and customer records at any time, including after cancelling — nothing is deleted without an export window first. See Data Protection for the current window.' },
+  { q: 'Am I locked into one courier?', a: 'No. Vendly books and labels through whichever courier you connect rather than tying you to a single provider — see the Partners page for how integrations work.' },
+  { q: 'What languages is support offered in?', a: "Vendly is built for Sri Lankan sellers, so support is offered in Sinhala and Tamil — the country's official languages — alongside English. See Contact Support for the current hours and channels." },
 ];
 
 export type AboutContent = {
@@ -277,30 +275,65 @@ export const aboutContent: AboutContent = {
 
 export type CareerRole = { title: string; type: string; body: string };
 
-export const careersRoles: CareerRole[] = [
-  { title: 'Customer Success (Sinhala / Tamil / English)', type: 'Colombo · Full-time', body: 'Helping sellers get their storefront live and their first orders moving, in the language they are most comfortable in.' },
-  { title: 'Product Engineer', type: 'Colombo or remote', body: 'Working across the storefront, order queue and COD Reliability Score — the parts of Vendly that touch every seller every day.' },
-];
+/**
+ * Real openings only — see `company.openRoles` in src/config/company.ts.
+ * Listing invented vacancies would have people spend real effort applying
+ * for jobs that do not exist, so the page renders a plain "nothing open"
+ * state until an actual role is added there.
+ */
+export const careersRoles: CareerRole[] = company.openRoles.value;
 
 export type PartnerCategory = { title: string; body: string };
 
 export const partnerCategories: PartnerCategory[] = [
-  { title: 'Courier & logistics', body: 'Partners who take a booked order from Vendly straight to pickup, with labels and tracking that write back to the order automatically.' },
-  { title: 'Payments', body: 'Card and bank transfer providers that settle into your account without a seller needing to reconcile anything by hand.' },
+  { title: 'Courier & logistics', body: 'Take a booked order from Vendly straight to pickup, with labels and tracking that write back to the order automatically.' },
+  { title: 'Payments', body: 'Card and bank transfer providers that settle into a seller account without anyone reconciling by hand.' },
   { title: 'Business tools', body: 'Accounting, analytics and marketing tools that read from the same order and customer data already inside Vendly.' },
 ];
 
 export type SupportChannel = { title: string; meta: string; body: string };
 
 export const contactChannels: SupportChannel[] = [
-  { title: 'WhatsApp', meta: 'Fastest for most questions', body: 'Message us the same way your customers message you — we reply on business days within a few hours.' },
-  { title: 'Email', meta: 'support@vendly.lk', body: 'Best for anything that needs detail or a screenshot, like a billing question or an order that looks wrong.' },
-  { title: 'Office', meta: 'Colombo, Sri Lanka', body: 'By appointment — reach out first so the right person is around when you visit.' },
+  ...(company.whatsapp.confirmed && company.whatsapp.value
+    ? [{
+        title: 'WhatsApp',
+        meta: 'Fastest for most questions',
+        body: 'Message us the same way your customers message you.',
+      }]
+    : []),
+  ...(company.supportEmail.confirmed
+    ? [{
+        title: 'Email',
+        meta: company.supportEmail.value,
+        body: 'Best for anything that needs detail or a screenshot, like a billing question or an order that looks wrong.',
+      }]
+    : []),
+  ...(company.officeLocation.confirmed
+    ? [{
+        title: 'Office',
+        meta: company.officeLocation.value,
+        body: 'By appointment — reach out first so the right person is around when you visit.',
+      }]
+    : []),
 ];
 
 export const supportChannels: SupportChannel[] = [
-  { title: 'WhatsApp support', meta: 'Mon–Sat, 9am–7pm (Sri Lanka time)', body: 'Include your business name and, if it is about an order, the order number — it gets you a faster, more specific answer.' },
-  { title: 'Email support', meta: 'support@vendly.lk', body: 'For anything that needs a longer explanation or an attachment. We aim to reply within one business day.' },
+  ...(company.whatsapp.confirmed && company.whatsapp.value
+    ? [{
+        title: 'WhatsApp support',
+        meta: company.supportHours.confirmed ? company.supportHours.value : 'Hours published at launch',
+        body: 'Include your business name and, if it is about an order, the order number — it gets you a faster, more specific answer.',
+      }]
+    : []),
+  ...(company.supportEmail.confirmed
+    ? [{
+        title: 'Email support',
+        meta: company.supportEmail.value,
+        body: company.responseTarget.confirmed
+          ? `For anything that needs a longer explanation or an attachment. We aim to reply within ${company.responseTarget.value}.`
+          : 'For anything that needs a longer explanation or an attachment.',
+      }]
+    : []),
 ];
 
 export type SolutionCopy = { headline: string; bullets: string[] };

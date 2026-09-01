@@ -10,6 +10,7 @@ import { color } from '@/theme/tokens';
 import { useViewport } from '@/theme/responsive';
 import { SiteNav } from '@/sections/SiteNav';
 import { SiteFooter } from '@/sections/SiteFooter';
+import { Seo } from './Seo';
 
 /**
  * Shared shell for every footer/legal/company/resources/support/solutions
@@ -25,12 +26,15 @@ export function ContentPage({
   eyebrow,
   title,
   lede,
+  description,
   floating,
   children,
 }: {
   eyebrow: string;
   title: string;
   lede?: string;
+  /** Meta description for this route; falls back to `lede`. */
+  description?: string;
   /** Rendered as a fixed overlay, outside the ScrollView — a chat launcher,
       for instance, that should stay put while the page scrolls. */
   floating?: React.ReactNode;
@@ -40,6 +44,7 @@ export function ContentPage({
 
   return (
     <ScrollProvider scrollRef={scrollRef}>
+      <Seo title={title} description={description ?? lede} />
       <StatusBar style="light" />
       <ContentPageBody scrollRef={scrollRef} eyebrow={eyebrow} title={title} lede={lede} floating={floating}>
         {children}

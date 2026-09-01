@@ -56,3 +56,12 @@ export default function SupportSlugScreen() {
     </ContentPage>
   );
 }
+
+/**
+ * Pre-renders one HTML file per slug at export time. Without this the
+ * static build emits a single literal `[slug].html`, so every one of
+ * these pages would ship with no crawlable markup of its own.
+ */
+export async function generateStaticParams(): Promise<Record<string, string>[]> {
+  return ['help', 'contact-support'].map((slug) => ({ slug }));
+}

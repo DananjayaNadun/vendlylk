@@ -62,10 +62,10 @@ function bestMatch(query: string): KbEntry | null {
 }
 
 const GREETING =
-  "Hi — I'm the Vendly assistant. Ask me about pricing, COD, WhatsApp orders, your storefront, or anything else in our guides and FAQ.";
+  "Hi — I'm the Vendly assistant. I search our FAQ, guides and documentation, so I can answer questions about pricing, COD, WhatsApp orders, your storefront and the rest of the product.";
 
 const FALLBACK =
-  "I don't have a confident answer for that from our help content. Try rephrasing, or use the form below to reach a real person — they'll follow up directly.";
+  "I don't have a confident answer for that from our help content. Try rephrasing it, or head to Contact Support to reach a person.";
 
 export function SupportChatbot() {
   const router = useRouter();

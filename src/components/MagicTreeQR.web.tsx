@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-// @ts-ignore — see QRCode.tsx: no type declarations shipped for this entry.
+// @ts-ignore — qrcode-generator ships no type declarations for this entry.
 import qrcodeFactory from 'qrcode-generator';
 
 /**
@@ -25,6 +25,38 @@ const PLATE_LIGHT = '#F1F0EC';
 const PLATE_DARK = '#E3E1DA';
 const GRASS = '#5FAE4A';
 const TRUNK = '#6B4A33';
+
+/** Relative luminance, per WCAG — used to keep the flat code scannable. */
+function luminance(hex: string): number {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const ch = [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff].map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+}
+
+function contrast(a: string, b: string): number {
+  const l1 = luminance(a);
+  const l2 = luminance(b);
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+}
+
+/**
+ * The darkest-keeping-its-hue version of `hex` that a QR reader can actually
+ * resolve against the ground plate.
+ *
+ * The canopy colours are chosen to look like foliage, and most of them sit
+ * far too close to the plate in luminance to scan — the default pink managed
+ * 1.49:1 against it, where readers want roughly 3:1 and are comfortable past
+ * 4.5:1. Darkening in steps keeps the chosen hue recognisable instead of
+ * forcing every code to plain black.
+ */
+function scannable(hex: string, against: string, target = 4.5): string {
+  let out = hex;
+  for (let i = 0; i < 24 && contrast(out, against) < target; i++) out = shade(out, -0.12);
+  return out;
+}
 
 /** Lightens (positive) or darkens (negative) a hex color by `percent` [-1, 1]. */
 function shade(hex: string, percent: number): string {
@@ -108,16 +140,45 @@ function Canopy({
     });
   }, [modules, offset, maxRadius, trunkHeight, canopyHeight]);
 
-  useEffect(() => {
+  /* Tree pose keeps the chosen colour; the flat code uses a darkened version
+     of the same hue so it stays readable to a scanner. Both ends are computed
+     once per colour, then blended per frame by the same `t` that moves the
+     blocks. */
+  const palette = useMemo(() => {
+    const leafLight = new THREE.Color(leafColor);
+    const leafDark = new THREE.Color(shade(leafColor, -0.18));
+    const flat = scannable(leafColor, PLATE_LIGHT);
+    const flatLight = new THREE.Color(flat);
+    const flatDark = new THREE.Color(shade(flat, -0.12));
+    return { leafLight, leafDark, flatLight, flatDark };
+  }, [leafColor]);
+
+  const paintedAt = useRef(-1);
+
+  const paint = (v: number) => {
     const mesh = meshRef.current;
     if (!mesh) return;
-    const dark = shade(leafColor, -0.18);
+    /* Repainting every instance is only worth it when the pose actually
+       moved; otherwise this runs every frame for an identical result. */
+    if (Math.abs(v - paintedAt.current) < 0.01) return;
+    paintedAt.current = v;
+    const c = new THREE.Color();
     for (let i = 0; i < instances.length; i++) {
-      const c = new THREE.Color(instances[i].dark ? dark : leafColor);
+      const isDark = instances[i].dark;
+      c.copy(isDark ? palette.flatDark : palette.flatLight).lerp(
+        isDark ? palette.leafDark : palette.leafLight,
+        v,
+      );
       mesh.setColorAt(i, c);
     }
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [instances, leafColor]);
+  };
+
+  useEffect(() => {
+    paintedAt.current = -1;
+    paint(t.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instances, palette]);
 
   const apply = (v: number) => {
     const mesh = meshRef.current;
@@ -134,6 +195,7 @@ function Canopy({
       mesh.setMatrixAt(i, m);
     }
     mesh.instanceMatrix.needsUpdate = true;
+    paint(v);
   };
 
   // Applied once synchronously so the first frame already shows the right

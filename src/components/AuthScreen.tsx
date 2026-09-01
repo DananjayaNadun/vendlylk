@@ -5,6 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { brand } from '@/assets';
 import { Button } from '@/components/Button';
+import { accountsLive } from '@/config/company';
+import { Seo } from '@/components/Seo';
 import { AppleIcon, FacebookIcon, GoogleIcon } from '@/components/icons';
 import { DAY_TIME_THEMES, DayTime, DayTimeSwitcher, DayTimeTheme } from '@/components/DayTimeSwitcher';
 import { metrics } from '@/components/Type';
@@ -36,7 +38,9 @@ export function AuthScreen({
   const { isDesktop, gutter } = useViewport();
 
   return (
-    <View style={{ flex: 1, backgroundColor: color.wash, alignItems: 'center', justifyContent: 'center', padding: gutter }}>
+    <>
+      <Seo title={heading} description={subheading} noIndex />
+      <View style={{ flex: 1, backgroundColor: color.wash, alignItems: 'center', justifyContent: 'center', padding: gutter }}>
       <Pressable
         onPress={() => router.push('/')}
         accessibilityRole="link"
@@ -76,9 +80,36 @@ export function AuthScreen({
             {subheading}
           </Text>
 
+          {accountsLive ? null : (
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: 'rgba(201,138,43,0.35)',
+                backgroundColor: color.cautionWash,
+                borderRadius: radius.control,
+                padding: 14,
+                marginBottom: 20,
+              }}
+            >
+              <Text style={[{ fontFamily: font.bodySemi, color: color.caution, marginBottom: 3 }, metrics(13, 1.4)]}>
+                Accounts are not open yet
+              </Text>
+              <Text style={[{ fontFamily: font.body, color: color.textMuted }, metrics(13, 1.5)]}>
+                Vendly is still in build. Nothing typed here is sent anywhere or stored — please don't enter a
+                password you use elsewhere.
+              </Text>
+            </View>
+          )}
+
           <View style={{ gap: 14, marginBottom: 22 }}>{children}</View>
 
-          <Button label={ctaLabel} block size="lg" onPress={onSubmit} />
+          <Button
+            label={accountsLive ? ctaLabel : 'Available at launch'}
+            block
+            size="lg"
+            disabled={!accountsLive}
+            onPress={onSubmit}
+          />
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginVertical: 24 }}>
             <View style={{ flex: 1, height: 1, backgroundColor: color.line }} />
@@ -89,13 +120,13 @@ export function AuthScreen({
           </View>
 
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 14, marginBottom: 26 }}>
-            <SocialButton>
+            <SocialButton label="Google">
               <GoogleIcon size={20} />
             </SocialButton>
-            <SocialButton>
+            <SocialButton label="Apple">
               <AppleIcon size={20} />
             </SocialButton>
-            <SocialButton>
+            <SocialButton label="Facebook">
               <FacebookIcon size={20} />
             </SocialButton>
           </View>
@@ -108,8 +139,9 @@ export function AuthScreen({
             <LaunchPanel />
           </View>
         ) : null}
+        </View>
       </View>
-    </View>
+    </>
   );
 }
 
@@ -158,9 +190,16 @@ export function AuthField({
   );
 }
 
-function SocialButton({ children }: { children: React.ReactNode }) {
+/** Decorative until OAuth is wired: disabled and labelled, so a visitor is
+    not left tapping a provider icon that silently does nothing. */
+function SocialButton({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <Pressable accessibilityRole="button">
+    <Pressable
+      accessibilityRole="button"
+      disabled={!accountsLive}
+      accessibilityState={{ disabled: !accountsLive }}
+      accessibilityLabel={accountsLive ? `Continue with ${label}` : `Continue with ${label} — available at launch`}
+    >
       <View
         style={{
           width: 46,
@@ -171,6 +210,7 @@ function SocialButton({ children }: { children: React.ReactNode }) {
           backgroundColor: color.paper,
           alignItems: 'center',
           justifyContent: 'center',
+          opacity: accountsLive ? 1 : 0.45,
         }}
       >
         {children}
